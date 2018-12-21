@@ -1,7 +1,8 @@
-function moveDistance(turtle, distance) {
+function moveDistance({ turtle, drawCommands }, distance) {
   const newX = distance + turtle.x;
   return {
     drawCommands: [
+      ...drawCommands,
       { drawCommand: 'drawLine', x1: turtle.x, y1: turtle.y, x2: newX, y2: turtle.y }
     ],
     turtle: {
@@ -11,9 +12,9 @@ function moveDistance(turtle, distance) {
   };
 }
 
-function rotate(turtle, addAngle) {
+function rotate({ turtle, drawCommands }, addAngle) {
   return {
-    drawCommands: [],
+    drawCommands: drawCommands,
     turtle: {
       ...turtle,
       angle: addAngle + turtle.angle
@@ -21,21 +22,22 @@ function rotate(turtle, addAngle) {
   };
 }
 
-export function parseLine(line, { turtle }) {
+export function parseLine(line, state) {
   const tokens = line.split(' ');
   const integerArgument = parseInt(tokens[1]);
   switch (tokens[0]) {
   };
   if (tokens[0] == 'forward') {
-    return moveDistance(turtle, integerArgument);
+    return moveDistance(state, integerArgument);
   } else if (tokens[0] == 'backward') {
-    return moveDistance(turtle, -integerArgument);
+    return moveDistance(state, -integerArgument);
   } else if (tokens[0] == 'right') {
-    return rotate(turtle, integerArgument);
+    return rotate(state, integerArgument);
   } else if (tokens[0] == 'left') {
-    return rotate(turtle, -integerArgument);
+    return rotate(state, -integerArgument);
   } else {
     return {
+      ...state,
       error: {
         userText: line,
         description: `Unknown function: ${tokens[0]}`,
