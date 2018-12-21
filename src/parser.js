@@ -22,53 +22,108 @@ function rotate({ turtle, drawCommands }, addAngle) {
   };
 }
 
-const requiresIntegerArgument = f => {
-  return (state, args) => {
-    if (args.length == 0) {
-      return state;
-    } else {
-      const integerArgument = parseInt(args[0]);
-      if (Number.isNaN(integerArgument)) {
-        return {
-          ...state,
-          error: {
-            description: 'Argument is not an integer',
-            position: { start: state.charsRead, end: state.charsRead + args[0].length }
-          }
-        }
-      }
+const changePen = option => (instruction, nextArg) => {
+  return {
+    ...instruction,
+    isComplete: true,
+    perform: state => ({ ...state, pen: { ...state.pen, ...option } })
+  };
+};
 
-      return f(state, integerArgument);
+const intValueOrError = (arg, f) => {
+  const integerArgument = parseInt(arg);
+  if (Number.isNaN(integerArgument)) {
+    return {
+      error: {
+        description: 'Argument is not an integer'
+      }
     }
+  }
+  return f(integerArgument);
+};
+
+const waitCommand = seconds => ({ drawCommand: 'wait', seconds: seconds });
+const wait = (instruction, nextArg) =>
+  !nextArg ? instruction :
+  intValueOrError(nextArg, integerArgument => ({
+    ...instruction,
+    isComplete: true,
+    perform: state => ({ ...state, drawCommands: [ ...state.drawCommands, waitCommand(integerArgument)] })
+  }));
+
+const forward = (instruction, nextArg) =>
+  !nextArg ? instruction :
+  intValueOrError(nextArg, integerArgument => ({
+    ...instruction,
+    isComplete: true,
+    perform: state => moveDistance(state, integerArgument)
+  }));
+
+const backward = (instruction, nextArg) =>
+  !nextArg ? instruction :
+  intValueOrError(nextArg, integerArgument => ({
+    ...instruction,
+    isComplete: true,
+    perform: state => moveDistance(state, -integerArgument)
+  }));
+
+const left = (instruction, nextArg) =>
+  !nextArg ? instruction :
+  intValueOrError(nextArg, integerArgument => ({
+    ...instruction,
+    isComplete: true,
+    perform: state => rotate(state, -integerArgument)
+  }));
+
+const right = (instruction, nextArg) =>
+  !nextArg ? instruction :
+  intValueOrError(nextArg, integerArgument => ({
+    ...instruction,
+    isComplete: true,
+    perform: state => rotate(state, integerArgument)
+  }));
+
+const repeat = (state, args) => {
+  if (state.repeat) {
+    if (!state.inRepeatBlock) {
+      const [ openBlockCharacter, ...rest ] = args;
+      return parseTokens(rest, { ...state, inRepeatBlock: true });
+    }
+    let repeatState = { ... state, currentFunction: undefined, drawCommands: [] };
+    args.forEach(arg => {
+    });
+  } else {
+    return { ... state, repeat: parseInt(args[0]) };
   }
 };
 
-const changePen = option => (state) => ({ ...state, pen: { ...state.pen, ...option } });
-
-const waitCommand = seconds => ({ drawCommand: 'wait', seconds: seconds });
-const wait = (state, integerArgument) => ({ ...state, drawCommands: [ ...state.drawCommands, waitCommand(integerArgument) ]});
-
 const builtInFunctions = {
-  forward: requiresIntegerArgument((state, integerArgument) => moveDistance(state, integerArgument)),
-  backward: requiresIntegerArgument((state, integerArgument) => moveDistance(state, -integerArgument)),
-  left: requiresIntegerArgument((state, integerArgument) => rotate(state, -integerArgument)),
-  right: requiresIntegerArgument((state, integerArgument) => rotate(state, integerArgument)),
+  forward: forward,
+  backward: backward,
+  left: left,
+  right: right,
   penup: changePen({ down: false }),
   pendown: changePen({ down: true }),
-  wait: requiresIntegerArgument(wait)
+  wait: wait
 };
 
 const removeEmptyTokens = tokens => tokens.filter(token => token !== '');
 const tokens = line => removeEmptyTokens(line.split(' '));
 
-export function parseTokens(tokens, state) {
+export function parseToken(state, nextToken) {
+  if (state.error) return state;
   if (state.currentFunction) {
-    return state.currentFunction(state, tokens);
+    const foundFunction = builtInFunctions[state.currentFunction.type];
+    const newFunction = foundFunction(state.currentFunction, nextToken);
+    if (newFunction.error) {
+      return { ...state, error: newFunction.error };
+    }
+    return { ...state, currentFunction: newFunction };
   }
-  const [ functionName, ...rest ] = tokens;
+  const functionName = nextToken;
   const foundFunction = builtInFunctions[functionName];
   if (foundFunction) {
-    return parseTokens(rest, { ...state, currentFunction: foundFunction, charsRead: functionName.length + 1});
+    return { ...state, currentFunction: foundFunction({ type: nextToken })};
   }
   return {
     ...state,
@@ -80,5 +135,10 @@ export function parseTokens(tokens, state) {
 }
 
 export function parseLine(line, state) {
-  return parseTokens(tokens(line), { ... state, lastLine: line, charsRead: 0 });
+  const updatedState = tokens(line).reduce(parseToken, { ... state, lastLine: line, charsRead: 0 });
+  if (!updatedState.error && updatedState.currentFunction.isComplete) {
+    return updatedState.currentFunction.perform(state);
+  } else {
+    return updatedState;
+  }
 }

@@ -79,7 +79,10 @@ describe('parser', () => {
       const result = parseLine('unknown 90', initialState);
       expect(result.error).toEqual({
         description: 'Unknown function: unknown',
-        position: { start: 0, end: 6 }
+        position: {
+          end: 6,
+          start: 0
+        }
       });
     });
 
@@ -87,7 +90,10 @@ describe('parser', () => {
       const result = parseLine('still-unknown 90', initialState);
       expect(result.error).toEqual({
         description: 'Unknown function: still-unknown',
-        position: { start: 0, end: 12 }
+        position: {
+          end: 12,
+          start: 0
+        }
       });
     });
 
@@ -103,8 +109,7 @@ describe('parser', () => {
     it('returns error if value is not an integer', () => {
       const result = parseLine('forward notnumber', initialState);
       expect(result.error).toEqual({
-        description: 'Argument is not an integer',
-        position: { start: 8, end: 17 }
+        description: 'Argument is not an integer'
       });
     });
   });
@@ -146,6 +151,17 @@ describe('parser', () => {
       const state = parseLine('wait 5', initialState);
       expect(state.drawCommands).toEqual([
         { drawCommand: 'wait', seconds: 5 }
+      ]);
+    });
+  });
+
+  describe('repeat', () => {
+    it.skip('repeats an instruction many times', () => {
+      let state = parseLine('repeat 3 [ forward 10 ]', initialState);
+      expect(state.drawCommands).toEqual([
+        { drawCommand: 'drawLine', x1: 0, y1: 0, x2: 10, y2: 0 },
+        { drawCommand: 'drawLine', x1: 10, y1: 0, x2: 20, y2: 0 },
+        { drawCommand: 'drawLine', x1: 20, y1: 0, x2: 30, y2: 0 },
       ]);
     });
   });
