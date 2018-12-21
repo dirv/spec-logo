@@ -32,12 +32,15 @@ const requiresIntegerArgument = f => {
   }
 };
 
+const changePen = option => (state, _) => ({ ...state, pen: { ...state.pen, ...option } });
+
 const builtInFunctions = {
   forward: requiresIntegerArgument((state, integerArgument) => moveDistance(state, integerArgument)),
   backward: requiresIntegerArgument((state, integerArgument) => moveDistance(state, -integerArgument)),
   left: requiresIntegerArgument((state, integerArgument) => rotate(state, -integerArgument)),
   right: requiresIntegerArgument((state, integerArgument) => rotate(state, integerArgument)),
-  penup: (state, _) => ({ ...state, pen: { ...state.pen, down: false } })
+  penup: changePen({ down: false }),
+  pendown: changePen({ down: true })
 };
 
 const removeEmptyTokens = tokens => tokens.filter(token => token !== '');

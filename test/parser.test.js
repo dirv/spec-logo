@@ -126,5 +126,10 @@ describe('parser', () => {
       const state = parseLine('penup', initialState);
       expect(state.pen.down).toEqual(false);
     });
+
+    it('accepts the pendown command', () => {
+      const state = parseLine('pendown', { ...initialState, pen: { ...pen, down: false } });
+      expect(state.pen.down).toEqual(true);
+    });
   });
 });
