@@ -27,7 +27,18 @@ const requiresIntegerArgument = f => {
     if (args.length == 0) {
       return state;
     } else {
-      return f(state, parseInt(args[0]));
+      const integerArgument = parseInt(args[0]);
+      if (Number.isNaN(integerArgument)) {
+        return {
+          ...state,
+          error: {
+            description: 'Argument is not an integer',
+            position: { start: state.charsRead, end: state.charsRead + args[0].length }
+          }
+        }
+      }
+
+      return f(state, integerArgument);
     }
   }
 };
@@ -57,18 +68,17 @@ export function parseTokens(tokens, state) {
   const [ functionName, ...rest ] = tokens;
   const foundFunction = builtInFunctions[functionName];
   if (foundFunction) {
-    return parseTokens(rest, { ...state, currentFunction: foundFunction });
-  } else {
-    return {
-      ...state,
-      error: {
-        description: `Unknown function: ${functionName}`,
-        position: { start: 0, end: functionName.length - 1 }
-      }
-    };
+    return parseTokens(rest, { ...state, currentFunction: foundFunction, charsRead: functionName.length + 1});
   }
+  return {
+    ...state,
+    error: {
+      description: `Unknown function: ${functionName}`,
+      position: { start: 0, end: functionName.length - 1 }
+    }
+  };
 }
 
 export function parseLine(line, state) {
-  return parseTokens(tokens(line), { ... state, lastLine: line });
+  return parseTokens(tokens(line), { ... state, lastLine: line, charsRead: 0 });
 }

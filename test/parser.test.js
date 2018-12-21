@@ -74,29 +74,39 @@ describe('parser', () => {
     expect(result.lastLine).toEqual('unknown 90');
   });
 
-  it('returns a basic error for an unknown command', () => {
-    const result = parseLine('unknown 90', initialState);
-    expect(result.error).toEqual({
-      description: 'Unknown function: unknown',
-      position: { start: 0, end: 6 }
+  describe('errors', () => {
+    it('returns a basic error for an unknown command', () => {
+      const result = parseLine('unknown 90', initialState);
+      expect(result.error).toEqual({
+        description: 'Unknown function: unknown',
+        position: { start: 0, end: 6 }
+      });
     });
-  });
 
-  it('returns a basic error for a different unknown command', () => {
-    const result = parseLine('still-unknown 90', initialState);
-    expect(result.error).toEqual({
-      description: 'Unknown function: still-unknown',
-      position: { start: 0, end: 12 }
+    it('returns a basic error for a different unknown command', () => {
+      const result = parseLine('still-unknown 90', initialState);
+      expect(result.error).toEqual({
+        description: 'Unknown function: still-unknown',
+        position: { start: 0, end: 12 }
+      });
     });
-  });
 
-  it('records multiple events', () => {
-    let state = parseLine('forward 10', initialState);
-    state = parseLine('forward 10', state);
-    expect(state.drawCommands).toEqual([
-      { drawCommand: 'drawLine', x1: 0, y1: 0, x2: 10, y2: 0 },
-      { drawCommand: 'drawLine', x1: 10, y1: 0, x2: 20, y2: 0 }
-    ]);
+    it('records multiple events', () => {
+      let state = parseLine('forward 10', initialState);
+      state = parseLine('forward 10', state);
+      expect(state.drawCommands).toEqual([
+        { drawCommand: 'drawLine', x1: 0, y1: 0, x2: 10, y2: 0 },
+        { drawCommand: 'drawLine', x1: 10, y1: 0, x2: 20, y2: 0 }
+      ]);
+    });
+
+    it('returns error if value is not an integer', () => {
+      const result = parseLine('forward notnumber', initialState);
+      expect(result.error).toEqual({
+        description: 'Argument is not an integer',
+        position: { start: 8, end: 17 }
+      });
+    });
   });
 
   it('maintains draw commands when rotating', () => {
