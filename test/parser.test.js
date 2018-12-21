@@ -37,18 +37,30 @@ describe('parser', () => {
     expect(result.drawCommands).toEqual([]);
   });
 
-  it('rotates', () => {
-    const result = parseLine('rotate 90', { pen, turtle: { x: 0, y: 0, angle: 0 } });
+  it('rotates right', () => {
+    const result = parseLine('right 90', { pen, turtle: { x: 0, y: 0, angle: 0 } });
     expect(result.turtle).toEqual({ x: 0, y: 0, angle: 90 });
   });
 
-  it('rotates by a different amount', () => {
-    const result = parseLine('rotate 30', { pen, turtle: { x: 0, y: 0, angle: 0 } });
+  it('rotates right by a different amount', () => {
+    const result = parseLine('right 30', { pen, turtle: { x: 0, y: 0, angle: 0 } });
     expect(result.turtle).toEqual({ x: 0, y: 0, angle: 30 });
   });
 
-  it('rotates by adding on to existing rotation', () => {
-    const result = parseLine('rotate 30', { pen, turtle: { x: 0, y: 0, angle: 90 } });
+  it('rotates right by adding on to existing rotation', () => {
+    const result = parseLine('right 30', { pen, turtle: { x: 0, y: 0, angle: 90 } });
     expect(result.turtle).toEqual({ x: 0, y: 0, angle: 120 });
+  });
+
+  it('moves backward', () => {
+    const result = parseLine('backward 10', { turtle, pen } );
+    expect(result.drawCommands).toEqual([
+      { drawCommand: 'drawLine', x1: 0, y1: 0, x2: -10, y2: 0 }
+    ]);
+  });
+
+  it('rotates left', () => {
+    const result = parseLine('left 90', { pen, turtle: { x: 0, y: 0, angle: 0 } });
+    expect(result.turtle).toEqual({ x: 0, y: 0, angle: -90 });
   });
 });
