@@ -131,5 +131,12 @@ describe('parser', () => {
       const state = parseLine('pendown', { ...initialState, pen: { ...pen, down: false } });
       expect(state.pen.down).toEqual(true);
     });
+
+    it('accepts the wait command', () => {
+      const state = parseLine('wait 5', initialState);
+      expect(state.drawCommands).toEqual([
+        { drawCommand: 'wait', seconds: 5 }
+      ]);
+    });
   });
 });

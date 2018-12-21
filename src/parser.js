@@ -32,7 +32,10 @@ const requiresIntegerArgument = f => {
   }
 };
 
-const changePen = option => (state, _) => ({ ...state, pen: { ...state.pen, ...option } });
+const changePen = option => (state) => ({ ...state, pen: { ...state.pen, ...option } });
+
+const waitCommand = seconds => ({ drawCommand: 'wait', seconds: seconds });
+const wait = (state, integerArgument) => ({ ...state, drawCommands: [ ...state.drawCommands, waitCommand(integerArgument) ]});
 
 const builtInFunctions = {
   forward: requiresIntegerArgument((state, integerArgument) => moveDistance(state, integerArgument)),
@@ -40,7 +43,8 @@ const builtInFunctions = {
   left: requiresIntegerArgument((state, integerArgument) => rotate(state, -integerArgument)),
   right: requiresIntegerArgument((state, integerArgument) => rotate(state, integerArgument)),
   penup: changePen({ down: false }),
-  pendown: changePen({ down: true })
+  pendown: changePen({ down: true }),
+  wait: requiresIntegerArgument(wait)
 };
 
 const removeEmptyTokens = tokens => tokens.filter(token => token !== '');
