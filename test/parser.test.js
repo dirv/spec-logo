@@ -107,4 +107,14 @@ describe('parser', () => {
     state = parseLine('unknown-command', state);
     expect(state.drawCommands.length).toEqual(1);
   });
+
+  describe('multi-line support', () => {
+    it.skip('accepts commands over multiple lines', () => {
+      let state = parseLine('forward', initialState);
+      state = parseLine('10', state);
+      expect(state.drawCommands).toEqual([
+        { drawCommand: 'drawLine', x1: 0, y1: 0, x2: 10, y2: 0 }
+      ]);
+    });
+  });
 });

@@ -22,26 +22,28 @@ function rotate({ turtle, drawCommands }, addAngle) {
   };
 }
 
+const forward = (state, args) => moveDistance(state, parseInt(args[0]));
+const backward = (state, args) => moveDistance(state, -parseInt(args[0]));
+const left = (state, args) => rotate(state, parseInt(args[0]));
+const right = (state, args) => rotate(state, -parseInt(args[0]));
+
 export function parseLine(line, state) {
-  const tokens = line.split(' ');
-  const integerArgument = parseInt(tokens[1]);
-  switch (tokens[0]) {
-  };
-  if (tokens[0] == 'forward') {
-    return moveDistance(state, integerArgument);
-  } else if (tokens[0] == 'backward') {
-    return moveDistance(state, -integerArgument);
-  } else if (tokens[0] == 'right') {
-    return rotate(state, integerArgument);
-  } else if (tokens[0] == 'left') {
-    return rotate(state, -integerArgument);
+  const [ functionName, ...rest ] = line.split(' ');
+  if (functionName == 'forward') {
+    return forward(state, rest);
+  } else if (functionName == 'backward') {
+    return backward(state, rest);
+  } else if (functionName == 'right') {
+    return left(state, rest);
+  } else if (functionName == 'left') {
+    return right(state, rest);
   } else {
     return {
       ...state,
       error: {
         userText: line,
-        description: `Unknown function: ${tokens[0]}`,
-        position: { start: 0, end: tokens[0].length - 1 }
+        description: `Unknown function: ${functionName}`,
+        position: { start: 0, end: functionName.length - 1 }
       }
     };
   }
