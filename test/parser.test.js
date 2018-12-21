@@ -109,7 +109,7 @@ describe('parser', () => {
   });
 
   describe('multi-line support', () => {
-    it.skip('accepts commands over multiple lines', () => {
+    it('accepts commands over multiple lines', () => {
       let state = parseLine('forward', initialState);
       state = parseLine('10', state);
       expect(state.drawCommands).toEqual([

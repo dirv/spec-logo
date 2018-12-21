@@ -30,7 +30,13 @@ const builtInFunctions = {
 };
 
 export function parseLine(line, state) {
+  if (state.currentFunction) {
+    return builtInFunctions[state.currentFunction](state, line.split(' '));
+  }
   const [ functionName, ...rest ] = line.split(' ');
+  if (rest.length === 0) {
+    return { ...state, currentFunction: functionName };
+  }
   const foundFunction = builtInFunctions[functionName];
   if (foundFunction) {
     return foundFunction(state, rest);
