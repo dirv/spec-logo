@@ -1,6 +1,6 @@
 import { parseLine } from '../src/parser';
 
-const pen = { paint: true };
+const pen = { paint: true, down: true };
 const turtle = { x: 0, y: 0, angle: 0 };
 const initialState = { pen, turtle, drawCommands: [] };
 
@@ -69,10 +69,14 @@ describe('parser', () => {
     expect(result.turtle).toEqual({ x: 0, y: 0, angle: -90 });
   });
 
+  it('includes the last entered line in the command', () => {
+    const result = parseLine('unknown 90', initialState);
+    expect(result.lastLine).toEqual('unknown 90');
+  });
+
   it('returns a basic error for an unknown command', () => {
     const result = parseLine('unknown 90', initialState);
     expect(result.error).toEqual({
-      userText: 'unknown 90',
       description: 'Unknown function: unknown',
       position: { start: 0, end: 6 }
     });
@@ -81,7 +85,6 @@ describe('parser', () => {
   it('returns a basic error for a different unknown command', () => {
     const result = parseLine('still-unknown 90', initialState);
     expect(result.error).toEqual({
-      userText: 'still-unknown 90',
       description: 'Unknown function: still-unknown',
       position: { start: 0, end: 12 }
     });
@@ -115,6 +118,13 @@ describe('parser', () => {
       expect(state.drawCommands).toEqual([
         { drawCommand: 'drawLine', x1: 0, y1: 0, x2: 10, y2: 0 }
       ]);
+    });
+  });
+
+  describe('no-argument functions', () => {
+    it('accepts the penup command', () => {
+      const state = parseLine('penup', initialState);
+      expect(state.pen.down).toEqual(false);
     });
   });
 });

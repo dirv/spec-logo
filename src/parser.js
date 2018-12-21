@@ -22,32 +22,46 @@ function rotate({ turtle, drawCommands }, addAngle) {
   };
 }
 
-const builtInFunctions = {
-  forward: (state, args) => moveDistance(state, parseInt(args[0])),
-  backward: (state, args) => moveDistance(state, -parseInt(args[0])),
-  left: (state, args) => rotate(state, -parseInt(args[0])),
-  right: (state, args) => rotate(state, parseInt(args[0]))
+const requiresIntegerArgument = f => {
+  return (state, args) => {
+    if (args.length == 0) {
+      return state;
+    } else {
+      return f(state, parseInt(args[0]));
+    }
+  }
 };
 
-export function parseLine(line, state) {
+const builtInFunctions = {
+  forward: requiresIntegerArgument((state, integerArgument) => moveDistance(state, integerArgument)),
+  backward: requiresIntegerArgument((state, integerArgument) => moveDistance(state, -integerArgument)),
+  left: requiresIntegerArgument((state, integerArgument) => rotate(state, -integerArgument)),
+  right: requiresIntegerArgument((state, integerArgument) => rotate(state, integerArgument)),
+  penup: (state, _) => ({ ...state, pen: { ...state.pen, down: false } })
+};
+
+const removeEmptyTokens = tokens => tokens.filter(token => token !== '');
+const tokens = line => removeEmptyTokens(line.split(' '));
+
+export function parseTokens(tokens, state) {
   if (state.currentFunction) {
-    return builtInFunctions[state.currentFunction](state, line.split(' '));
+    return state.currentFunction(state, tokens);
   }
-  const [ functionName, ...rest ] = line.split(' ');
-  if (rest.length === 0) {
-    return { ...state, currentFunction: functionName };
-  }
+  const [ functionName, ...rest ] = tokens;
   const foundFunction = builtInFunctions[functionName];
   if (foundFunction) {
-    return foundFunction(state, rest);
+    return parseTokens(rest, { ...state, currentFunction: foundFunction });
   } else {
     return {
       ...state,
       error: {
-        userText: line,
         description: `Unknown function: ${functionName}`,
         position: { start: 0, end: functionName.length - 1 }
       }
     };
   }
+}
+
+export function parseLine(line, state) {
+  return parseTokens(tokens(line), { ... state, lastLine: line });
 }
