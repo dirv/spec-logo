@@ -1,6 +1,10 @@
-function moveDistance(state, distance) {
+const constantValue = value => ({ get: _ => value });
+const parameterValue = parameter => ({ get: state => parseInt(state.collectedParameters[parameter.substring(1)]) });
+const negateIntegerValue = value => ({ get: state => -value.get(state) });
+
+function moveDistance(state, distanceValue) {
   const { drawCommands, turtle } = state;
-  const newX = distance + turtle.x;
+  const newX = distanceValue.get(state) + turtle.x;
   return {
     ...state,
     drawCommands: [
@@ -14,13 +18,13 @@ function moveDistance(state, distance) {
   };
 }
 
-function rotate(state, addAngle) {
+function rotate(state, addAngleValue) {
   const { drawCommands, turtle } = state;
   return {
     drawCommands: drawCommands,
     turtle: {
       ...turtle,
-      angle: addAngle + turtle.angle
+      angle: addAngleValue.get(state) + turtle.angle
     }
   };
 }
@@ -33,7 +37,10 @@ const changePen = option => (instruction, nextArg) => {
   };
 };
 
-const intValueOrError = (arg, f) => {
+const valueOrError = (arg, f) => {
+  if (arg.startsWith(':')) {
+    return f(parameterValue(arg));
+  }
   const integerArgument = parseInt(arg);
   if (Number.isNaN(integerArgument)) {
     return {
@@ -42,48 +49,48 @@ const intValueOrError = (arg, f) => {
       }
     }
   }
-  return f(integerArgument);
+  return f(constantValue(integerArgument));
 };
 
 const waitCommand = seconds => ({ drawCommand: 'wait', seconds: seconds });
 const wait = (instruction, nextArg) =>
   !nextArg ? instruction :
-  intValueOrError(nextArg, integerArgument => ({
+  valueOrError(nextArg, value => ({
     ...instruction,
     isComplete: true,
-    perform: state => ({ ...state, drawCommands: [ ...state.drawCommands, waitCommand(integerArgument)] })
+    perform: state => ({ ...state, drawCommands: [ ...state.drawCommands, waitCommand(value.get(state))] })
   }));
 
 const forward = (instruction, nextArg) =>
   !nextArg ? instruction :
-  intValueOrError(nextArg, integerArgument => ({
+  valueOrError(nextArg, value => ({
     ...instruction,
     isComplete: true,
-    perform: state => moveDistance(state, integerArgument)
+    perform: state => moveDistance(state, value)
   }));
 
 const backward = (instruction, nextArg) =>
   !nextArg ? instruction :
-  intValueOrError(nextArg, integerArgument => ({
+  valueOrError(nextArg, value => ({
     ...instruction,
     isComplete: true,
-    perform: state => moveDistance(state, -integerArgument)
+    perform: state => moveDistance(state, negateIntegerValue(value))
   }));
 
 const left = (instruction, nextArg) =>
   !nextArg ? instruction :
-  intValueOrError(nextArg, integerArgument => ({
+  valueOrError(nextArg, value => ({
     ...instruction,
     isComplete: true,
-    perform: state => rotate(state, -integerArgument)
+    perform: state => rotate(state, negateIntegerValue(value))
   }));
 
 const right = (instruction, nextArg) =>
   !nextArg ? instruction :
-  intValueOrError(nextArg, integerArgument => ({
+  valueOrError(nextArg, value => ({
     ...instruction,
     isComplete: true,
-    perform: state => rotate(state, integerArgument)
+    perform: state => rotate(state, value)
   }));
 
 const duplicateArrayItems = (array, times) => Array(times).fill(array).flat();
@@ -98,11 +105,11 @@ const repeat = (instruction, nextArg) => {
       if (!instruction.innerInstructions[0].isComplete) {
         return { error: { description: 'The last command to repeat is not complete' } };
       }
-      const allInstructions = duplicateArrayItems(instruction.innerInstructions.reverse(), instruction.times);
+      const allInstructions = state => duplicateArrayItems(instruction.innerInstructions.reverse(), instruction.times.get(state));
       return {
         ...instruction,
         isComplete: true,
-        perform: state => allInstructions.reduce((state, instruction) => instruction.perform(state), state)
+        perform: state => allInstructions(state).reduce((state, instruction) => instruction.perform(state), state)
       };
     }
     if (instruction.innerInstructions[0].isComplete) {
@@ -112,19 +119,21 @@ const repeat = (instruction, nextArg) => {
       return { ...instruction, innerInstructions: [ parseToken(currentInstruction, {}, nextArg), ...rest ] };
     }
   } else {
-    return intValueOrError(nextArg, integerArgument => ({
+    return valueOrError(nextArg, value => ({
       ...instruction,
-      times: integerArgument
+      times: value
     }));
   }
 };
-
 
 const addFunctionParameter = (instruction, nextArg) => ({ ...instruction, parameters: [ ...instruction.parameters, nextArg.substring(1) ] });
 const to = (instruction, nextArg) => {
   if (!nextArg) return { ...instruction, innerInstructions: [{}], parameters: [] };
   if (!instruction.name) {
-    return { ...instruction, name: nextArg };
+    return { ...instruction, name: nextArg, collectingParameters: true };
+  }
+  if (instruction.collectingParameters && nextArg.startsWith(':')) {
+    return addFunctionParameter(instruction, nextArg);
   }
   if (nextArg === 'end') {
     return {
@@ -133,32 +142,35 @@ const to = (instruction, nextArg) => {
       perform: state => ({ ...state, userDefinedFunctions: { ...state.userDefinedFunctions, [instruction.name]: instruction } })
     };
   }
-  if (nextArg.startsWith(':')) {
-    return addFunctionParameter(instruction, nextArg);
-  }
   if (instruction.innerInstructions[0].isComplete) {
     return { ...instruction, innerInstructions: [ parseToken({}, {}, nextArg), ... instruction.innerInstructions ] };
   } else {
-    const [ currentInstruction, ... rest ] = instruction.innerInstructions;
-    return { ...instruction, innerInstructions: [ parseToken(currentInstruction, {}, nextArg), ...rest ] };
+    const [ currentInstruction, ...rest ] = instruction.innerInstructions;
+    return { ...instruction, innerInstructions: [ parseToken(currentInstruction, {}, nextArg), ...rest ], collectingParameters: false };
   }
 };
 
 const call = (instruction, nextArg, userDefinedFunctions) => {
   const func = userDefinedFunctions[instruction.functionName];
-  if (instruction.collectedParameters.length === func.parameters.length) {
+  if (nextArg) {
+    const nextArgName = func.parameters[Object.keys(instruction.collectedParameters).length];
+    instruction = {
+      ...instruction,
+      collectedParameters: { ...instruction.collectedParameters, [nextArgName]: nextArg }
+    };
+  }
+  if (Object.keys(instruction.collectedParameters).length === func.parameters.length) {
     const instructions = func.innerInstructions.reverse();
     return {
       ...instruction,
       isComplete: true,
-      perform: state => instructions.reduce((state, instruction) => instruction.perform(state), state)
-    };
-  } else if (nextArg) {
-    return {
-      ...instruction,
-      collectedParameters: [ ...instruction.collectedParameters, nextArg ]
+      perform: state => {
+        state = { ...state, collectedParameters: { ...state.collectedParameters, ...instruction.collectedParameters } };
+        return instructions.reduce((state, instruction) => instruction.perform(state), state);
+      }
     };
   }
+  return instruction;
 };
 
 const builtInFunctions = {
@@ -185,7 +197,7 @@ const findFunction = (userDefinedFunctions, nextArg) => {
   }
   if (Object.keys(userDefinedFunctions).includes(functionName)) {
     const foundFunction = builtInFunctions['call'];
-    return foundFunction({ type: 'call', functionName, collectedParameters: [] }, undefined, userDefinedFunctions);
+    return foundFunction({ type: 'call', functionName, collectedParameters: {} }, undefined, userDefinedFunctions);
   }
   return {
     error: {

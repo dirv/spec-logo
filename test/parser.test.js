@@ -206,10 +206,10 @@ describe('parser', () => {
       ]);
     });
 
-    it.skip('passes a single parameter to a function', () => {
+    it('passes a single parameter to a function', () => {
       let state = initialState;
       state = parseLine('to drawsquare :x forward :x end', state);
-      state = parseLine('drawsquare', state);
+      state = parseLine('drawsquare 10', state);
       expect(state.drawCommands).toEqual([
         { drawCommand: 'drawLine', x1: 0, y1: 0, x2: 10, y2: 0 }
       ]);
