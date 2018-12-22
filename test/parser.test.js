@@ -2,7 +2,7 @@ import { parseLine } from '../src/parser';
 
 const pen = { paint: true, down: true };
 const turtle = { x: 0, y: 0, angle: 0 };
-const initialState = { pen, turtle, drawCommands: [] };
+const initialState = { pen, turtle, drawCommands: [], currentFunction: {} };
 
 describe('parser', () => {
   it('moves forward', () => {

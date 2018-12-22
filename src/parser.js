@@ -92,17 +92,14 @@ const repeat = (instruction, nextArg) => {
       return { ...instruction, inRepeatBlock: true, innerInstructions: [{}] };
     }
     if (nextArg === ']') {
-      const functions = instruction.innerInstructions.reverse().map(instruction => instruction.currentFunction);
-      const allInstructions = duplicateArrayItems(functions, instruction.times);
+      const allInstructions = duplicateArrayItems(instruction.innerInstructions.reverse(), instruction.times);
       return {
         ...instruction,
         isComplete: true,
         perform: state => allInstructions.reduce((state, instruction) => instruction.perform(state), state)
       };
     }
-    console.log(instruction.innerInstructions);
-    if (instruction.innerInstructions[0].currentFunction && instruction.innerInstructions[0].currentFunction.isComplete) {
-      console.log('yes ' + nextArg);
+    if (instruction.innerInstructions[0].isComplete) {
       return { ...instruction, innerInstructions: [ parseToken({}, nextArg), ...instruction.innerInstructions ] };
     } else {
       const [ currentInstruction, ...rest ] = instruction.innerInstructions;
@@ -130,35 +127,39 @@ const builtInFunctions = {
 const removeEmptyTokens = tokens => tokens.filter(token => token !== '');
 const tokens = line => removeEmptyTokens(line.split(' '));
 
-export function parseToken(state, nextToken) {
-  if (state.error) return state;
-  if (state.currentFunction) {
-    const foundFunction = builtInFunctions[state.currentFunction.type];
-    const newFunction = foundFunction(state.currentFunction, nextToken);
-    if (newFunction.error) {
-      return { ...state, error: newFunction.error };
-    }
-    return { ...state, currentFunction: newFunction };
-  }
-  const functionName = nextToken;
+const findFunction = nextArg => {
+  const functionName = nextArg;
   const foundFunction = builtInFunctions[functionName];
   if (foundFunction) {
-    return { ...state, currentFunction: foundFunction({ type: nextToken })};
+    return foundFunction({ type: functionName });
   }
   return {
-    ...state,
     error: {
       description: `Unknown function: ${functionName}`,
       position: { start: 0, end: functionName.length - 1 }
     }
   };
+};
+
+export function parseToken(instruction, nextToken) {
+  if (instruction.error) return instruction;
+  if (instruction.type) {
+    return builtInFunctions[instruction.type](instruction, nextToken);
+  }
+  return findFunction(nextToken);
 }
 
 export function parseLine(line, state) {
-  const updatedState = tokens(line).reduce(parseToken, { ... state, lastLine: line, charsRead: 0 });
-  if (!updatedState.error && updatedState.currentFunction.isComplete) {
-    return updatedState.currentFunction.perform(state);
-  } else {
-    return updatedState;
+  const updatedState = { ...state, lastLine: line };
+  const updatedFunction = tokens(line).reduce(parseToken, state.currentFunction);
+  if (updatedFunction.error) {
+    return { ...updatedState, error: updatedFunction.error };
   }
+  if (updatedFunction.isComplete) {
+    return {
+      ...updatedFunction.perform(updatedState),
+      currentFunction: {}
+    };
+  }
+  return { ...updatedState, currentFunction: updatedFunction };
 }
