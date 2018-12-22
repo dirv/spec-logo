@@ -4,8 +4,6 @@ const constantValue = value => ({ get: _ => value });
 const parameterValue = parameter => ({ get: state => parseInt(state.collectedParameters[parameter.substring(1)]) });
 const negateIntegerValue = value => ({ get: state => -value.get(state) });
 
-const radians = angle => Math.PI * angle / 180;
-
 function rotate(state, addAngleValue) {
   const { drawCommands, turtle } = state;
   return {
