@@ -204,14 +204,18 @@ export function parseToken(instruction, userDefinedFunctions, nextToken) {
 }
 
 export function parseLine(line, state) {
-  const updatedState = { ...state, lastLine: line };
+  const updatedState = { ...state };
   const updatedFunction = tokens(line).reduce((instruction, nextToken) => parseToken(instruction, state.userDefinedFunctions, nextToken), state.currentFunction);
   if (updatedFunction.error) {
-    return { ...updatedState, error: updatedFunction.error };
+    return {
+      ...updatedState,
+      error: { ...updatedFunction.error, line: line }
+    };
   }
   if (updatedFunction.isComplete) {
     return {
       ...updatedFunction.perform(updatedState),
+      acceptedLines: [...updatedState.acceptedLines, line],
       currentFunction: {}
     };
   }

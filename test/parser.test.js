@@ -2,7 +2,7 @@ import { parseLine } from '../src/parser';
 
 const pen = { paint: true, down: true };
 const turtle = { x: 0, y: 0, angle: 0 };
-const initialState = { pen, turtle, drawCommands: [], currentFunction: {}, userDefinedFunctions: {} };
+const initialState = { pen, turtle, drawCommands: [], currentFunction: {}, userDefinedFunctions: {}, acceptedLines: [] };
 
 describe('parser', () => {
   it('moves forward', () => {
@@ -69,32 +69,22 @@ describe('parser', () => {
     expect(result.turtle).toEqual({ x: 0, y: 0, angle: -90 });
   });
 
-  it('includes the last entered line in the command', () => {
-    const result = parseLine('unknown 90', initialState);
-    expect(result.lastLine).toEqual('unknown 90');
-  });
-
   describe('errors', () => {
+    it('includes the last entered line in the command', () => {
+      const result = parseLine('unknown 90', initialState);
+      expect(result.error.line).toEqual('unknown 90');
+    });
+
     it('returns a basic error for an unknown command', () => {
       const result = parseLine('unknown 90', initialState);
-      expect(result.error).toEqual({
-        description: 'Unknown function: unknown',
-        position: {
-          end: 6,
-          start: 0
-        }
-      });
+      expect(result.error.description).toEqual('Unknown function: unknown');
+      expect(result.error.position).toEqual({ end: 6, start: 0 });
     });
 
     it('returns a basic error for a different unknown command', () => {
       const result = parseLine('still-unknown 90', initialState);
-      expect(result.error).toEqual({
-        description: 'Unknown function: still-unknown',
-        position: {
-          end: 12,
-          start: 0
-        }
-      });
+      expect(result.error.description).toEqual('Unknown function: still-unknown');
+      expect(result.error.position).toEqual({ end: 12, start: 0 });
     });
 
     it('records multiple events', () => {
@@ -108,9 +98,7 @@ describe('parser', () => {
 
     it('returns error if value is not an integer', () => {
       const result = parseLine('forward notnumber', initialState);
-      expect(result.error).toEqual({
-        description: 'Argument is not an integer'
-      });
+      expect(result.error.description).toEqual('Argument is not an integer');
     });
   });
 
@@ -212,6 +200,17 @@ describe('parser', () => {
       state = parseLine('drawsquare 10', state);
       expect(state.drawCommands).toEqual([
         { drawCommand: 'drawLine', x1: 0, y1: 0, x2: 10, y2: 0 }
+      ]);
+    });
+  });
+
+  describe('repl behavior', () => {
+    it('maintains history of all text lines', () => {
+      let state = initialState;
+      state = parseLine('forward 10', state);
+      state = parseLine('backward 10', state);
+      expect(state.acceptedLines).toEqual([
+        'forward 10', 'backward 10'
       ]);
     });
   });
