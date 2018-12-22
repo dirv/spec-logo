@@ -86,10 +86,10 @@ const right = (instruction, nextArg) =>
 const duplicateArrayItems = (array, times) => Array(times).fill(array).flat();
 
 const repeat = (instruction, nextArg) => {
-  if (!nextArg) return instruction;
+  if (!nextArg) return { ...instruction, innerInstructions: [{}] };
   if (instruction.times) {
     if (!instruction.inRepeatBlock) {
-      return { ...instruction, inRepeatBlock: true, innerInstructions: [{}] };
+      return { ...instruction, inRepeatBlock: true };
     }
     if (nextArg === ']') {
       if (!instruction.innerInstructions[0].isComplete) {
@@ -116,6 +116,27 @@ const repeat = (instruction, nextArg) => {
   }
 };
 
+const to = (instruction, nextArg) => {
+  if (!nextArg) return { ...instruction, innerInstructions: [{}] };
+  if (!instruction.name) {
+    return { ...instruction, name: nextArg };
+  }
+  if (nextArg === 'end') {
+    const instructions = instruction.innerInstructions.reverse();
+    return {
+      ...instruction,
+      isComplete: true,
+      perform: state => instructions.reduce((state, instruction) => instruction.perform(state), state)
+    };
+  }
+  if (instruction.innerInstructions[0].isComplete) {
+    return { ...instruction, innerInstructions: [ parseToken({}, nextArg), ... instruction.innerInstructions ] };
+  } else {
+    const [ currentInstruction, ... rest ] = instruction.innerInstructions;
+    return { ...instruction, innerInstructions: [ parseToken(currentInstruction, nextArg), ...rest ] };
+  }
+};
+
 const builtInFunctions = {
   forward: forward,
   backward: backward,
@@ -124,7 +145,8 @@ const builtInFunctions = {
   penup: changePen({ down: false }),
   pendown: changePen({ down: true }),
   wait: wait,
-  repeat: repeat
+  repeat: repeat,
+  to: to
 };
 
 const removeEmptyTokens = tokens => tokens.filter(token => token !== '');

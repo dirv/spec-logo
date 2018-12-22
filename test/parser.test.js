@@ -185,4 +185,25 @@ describe('parser', () => {
       expect(state.error.description).toEqual('The last command to repeat is not complete');
     });
   });
+
+  describe('functions', () => {
+    it('defines a function with no parameters that can be called', () => {
+      let state = initialState;
+      state = parseLine('to drawsquare forward 10 end', state);
+      state = parseLine('drawsquare', state);
+      expect(state.drawCommands).toEqual([
+        { drawCommand: 'drawLine', x1: 0, y1: 0, x2: 10, y2: 0 }
+      ]);
+    });
+
+    it('defines a function with multiple instructions', () => {
+      let state = initialState;
+      state = parseLine('to drawsquare forward 10 backward 10 end', state);
+      state = parseLine('drawsquare', state);
+      expect(state.drawCommands).toEqual([
+        { drawCommand: 'drawLine', x1: 0, y1: 0, x2: 10, y2: 0 },
+        { drawCommand: 'drawLine', x1: 10, y1: 0, x2: 0, y2: 0 }
+      ]);
+    });
+  });
 });
