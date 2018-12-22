@@ -83,17 +83,36 @@ const right = (instruction, nextArg) =>
     perform: state => rotate(state, integerArgument)
   }));
 
-const repeat = (state, args) => {
-  if (state.repeat) {
-    if (!state.inRepeatBlock) {
-      const [ openBlockCharacter, ...rest ] = args;
-      return parseTokens(rest, { ...state, inRepeatBlock: true });
+const duplicateArrayItems = (array, times) => Array(times).fill(array).flat();
+
+const repeat = (instruction, nextArg) => {
+  if (!nextArg) return instruction;
+  if (instruction.times) {
+    if (!instruction.inRepeatBlock) {
+      return { ...instruction, inRepeatBlock: true, innerInstructions: [{}] };
     }
-    let repeatState = { ... state, currentFunction: undefined, drawCommands: [] };
-    args.forEach(arg => {
-    });
+    if (nextArg === ']') {
+      const functions = instruction.innerInstructions.reverse().map(instruction => instruction.currentFunction);
+      const allInstructions = duplicateArrayItems(functions, instruction.times);
+      return {
+        ...instruction,
+        isComplete: true,
+        perform: state => allInstructions.reduce((state, instruction) => instruction.perform(state), state)
+      };
+    }
+    console.log(instruction.innerInstructions);
+    if (instruction.innerInstructions[0].currentFunction && instruction.innerInstructions[0].currentFunction.isComplete) {
+      console.log('yes ' + nextArg);
+      return { ...instruction, innerInstructions: [ parseToken({}, nextArg), ...instruction.innerInstructions ] };
+    } else {
+      const [ currentInstruction, ...rest ] = instruction.innerInstructions;
+      return { ...instruction, innerInstructions: [ parseToken(currentInstruction, nextArg), ...rest ] };
+    }
   } else {
-    return { ... state, repeat: parseInt(args[0]) };
+    return intValueOrError(nextArg, integerArgument => ({
+      ...instruction,
+      times: integerArgument
+    }));
   }
 };
 
@@ -104,7 +123,8 @@ const builtInFunctions = {
   right: right,
   penup: changePen({ down: false }),
   pendown: changePen({ down: true }),
-  wait: wait
+  wait: wait,
+  repeat: repeat
 };
 
 const removeEmptyTokens = tokens => tokens.filter(token => token !== '');

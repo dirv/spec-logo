@@ -156,12 +156,22 @@ describe('parser', () => {
   });
 
   describe('repeat', () => {
-    it.skip('repeats an instruction many times', () => {
+    it('repeats an instruction many times', () => {
       let state = parseLine('repeat 3 [ forward 10 ]', initialState);
       expect(state.drawCommands).toEqual([
         { drawCommand: 'drawLine', x1: 0, y1: 0, x2: 10, y2: 0 },
         { drawCommand: 'drawLine', x1: 10, y1: 0, x2: 20, y2: 0 },
         { drawCommand: 'drawLine', x1: 20, y1: 0, x2: 30, y2: 0 },
+      ]);
+    });
+
+    it('repeats multiple instructions', () => {
+      let state = parseLine('repeat 2 [ forward 10 backward 10 ]', initialState);
+      expect(state.drawCommands).toEqual([
+        { drawCommand: 'drawLine', x1: 0, y1: 0, x2: 10, y2: 0 },
+        { drawCommand: 'drawLine', x1: 10, y1: 0, x2: 0, y2: 0 },
+        { drawCommand: 'drawLine', x1: 0, y1: 0, x2: 10, y2: 0 },
+        { drawCommand: 'drawLine', x1: 10, y1: 0, x2: 0, y2: 0 }
       ]);
     });
   });
