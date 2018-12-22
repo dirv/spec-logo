@@ -2,7 +2,7 @@ import { parseLine } from '../src/parser';
 
 const pen = { paint: true, down: true };
 const turtle = { x: 0, y: 0, angle: 0 };
-const initialState = { pen, turtle, drawCommands: [], currentFunction: {} };
+const initialState = { pen, turtle, drawCommands: [], currentFunction: {}, userDefinedFunctions: {} };
 
 describe('parser', () => {
   it('moves forward', () => {
@@ -203,6 +203,15 @@ describe('parser', () => {
       expect(state.drawCommands).toEqual([
         { drawCommand: 'drawLine', x1: 0, y1: 0, x2: 10, y2: 0 },
         { drawCommand: 'drawLine', x1: 10, y1: 0, x2: 0, y2: 0 }
+      ]);
+    });
+
+    it.skip('passes a single parameter to a function', () => {
+      let state = initialState;
+      state = parseLine('to drawsquare :x forward :x end', state);
+      state = parseLine('drawsquare', state);
+      expect(state.drawCommands).toEqual([
+        { drawCommand: 'drawLine', x1: 0, y1: 0, x2: 10, y2: 0 }
       ]);
     });
   });

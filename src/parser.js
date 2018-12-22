@@ -1,6 +1,8 @@
-function moveDistance({ turtle, drawCommands }, distance) {
+function moveDistance(state, distance) {
+  const { drawCommands, turtle } = state;
   const newX = distance + turtle.x;
   return {
+    ...state,
     drawCommands: [
       ...drawCommands,
       { drawCommand: 'drawLine', x1: turtle.x, y1: turtle.y, x2: newX, y2: turtle.y }
@@ -12,7 +14,8 @@ function moveDistance({ turtle, drawCommands }, distance) {
   };
 }
 
-function rotate({ turtle, drawCommands }, addAngle) {
+function rotate(state, addAngle) {
+  const { drawCommands, turtle } = state;
   return {
     drawCommands: drawCommands,
     turtle: {
@@ -103,10 +106,10 @@ const repeat = (instruction, nextArg) => {
       };
     }
     if (instruction.innerInstructions[0].isComplete) {
-      return { ...instruction, innerInstructions: [ parseToken({}, nextArg), ...instruction.innerInstructions ] };
+      return { ...instruction, innerInstructions: [ parseToken({}, {}, nextArg), ...instruction.innerInstructions ] };
     } else {
       const [ currentInstruction, ...rest ] = instruction.innerInstructions;
-      return { ...instruction, innerInstructions: [ parseToken(currentInstruction, nextArg), ...rest ] };
+      return { ...instruction, innerInstructions: [ parseToken(currentInstruction, {}, nextArg), ...rest ] };
     }
   } else {
     return intValueOrError(nextArg, integerArgument => ({
@@ -116,24 +119,45 @@ const repeat = (instruction, nextArg) => {
   }
 };
 
+
+const addFunctionParameter = (instruction, nextArg) => ({ ...instruction, parameters: [ ...instruction.parameters, nextArg.substring(1) ] });
 const to = (instruction, nextArg) => {
-  if (!nextArg) return { ...instruction, innerInstructions: [{}] };
+  if (!nextArg) return { ...instruction, innerInstructions: [{}], parameters: [] };
   if (!instruction.name) {
     return { ...instruction, name: nextArg };
   }
   if (nextArg === 'end') {
-    const instructions = instruction.innerInstructions.reverse();
+    return {
+      ...instruction,
+      isComplete: true,
+      perform: state => ({ ...state, userDefinedFunctions: { ...state.userDefinedFunctions, [instruction.name]: instruction } })
+    };
+  }
+  if (nextArg.startsWith(':')) {
+    return addFunctionParameter(instruction, nextArg);
+  }
+  if (instruction.innerInstructions[0].isComplete) {
+    return { ...instruction, innerInstructions: [ parseToken({}, {}, nextArg), ... instruction.innerInstructions ] };
+  } else {
+    const [ currentInstruction, ... rest ] = instruction.innerInstructions;
+    return { ...instruction, innerInstructions: [ parseToken(currentInstruction, {}, nextArg), ...rest ] };
+  }
+};
+
+const call = (instruction, nextArg, userDefinedFunctions) => {
+  const func = userDefinedFunctions[instruction.functionName];
+  if (instruction.collectedParameters.length === func.parameters.length) {
+    const instructions = func.innerInstructions.reverse();
     return {
       ...instruction,
       isComplete: true,
       perform: state => instructions.reduce((state, instruction) => instruction.perform(state), state)
     };
-  }
-  if (instruction.innerInstructions[0].isComplete) {
-    return { ...instruction, innerInstructions: [ parseToken({}, nextArg), ... instruction.innerInstructions ] };
-  } else {
-    const [ currentInstruction, ... rest ] = instruction.innerInstructions;
-    return { ...instruction, innerInstructions: [ parseToken(currentInstruction, nextArg), ...rest ] };
+  } else if (nextArg) {
+    return {
+      ...instruction,
+      collectedParameters: [ ...instruction.collectedParameters, nextArg ]
+    };
   }
 };
 
@@ -146,17 +170,22 @@ const builtInFunctions = {
   pendown: changePen({ down: true }),
   wait: wait,
   repeat: repeat,
-  to: to
+  to: to,
+  call: call
 };
 
 const removeEmptyTokens = tokens => tokens.filter(token => token !== '');
 const tokens = line => removeEmptyTokens(line.split(' '));
 
-const findFunction = nextArg => {
+const findFunction = (userDefinedFunctions, nextArg) => {
   const functionName = nextArg;
   const foundFunction = builtInFunctions[functionName];
   if (foundFunction) {
     return foundFunction({ type: functionName });
+  }
+  if (Object.keys(userDefinedFunctions).includes(functionName)) {
+    const foundFunction = builtInFunctions['call'];
+    return foundFunction({ type: 'call', functionName, collectedParameters: [] }, undefined, userDefinedFunctions);
   }
   return {
     error: {
@@ -166,17 +195,17 @@ const findFunction = nextArg => {
   };
 };
 
-export function parseToken(instruction, nextToken) {
+export function parseToken(instruction, userDefinedFunctions, nextToken) {
   if (instruction.error) return instruction;
   if (instruction.type) {
-    return builtInFunctions[instruction.type](instruction, nextToken);
+    return builtInFunctions[instruction.type](instruction, nextToken, userDefinedFunctions);
   }
-  return findFunction(nextToken);
+  return findFunction(userDefinedFunctions, nextToken);
 }
 
 export function parseLine(line, state) {
   const updatedState = { ...state, lastLine: line };
-  const updatedFunction = tokens(line).reduce(parseToken, state.currentFunction);
+  const updatedFunction = tokens(line).reduce((instruction, nextToken) => parseToken(instruction, state.userDefinedFunctions, nextToken), state.currentFunction);
   if (updatedFunction.error) {
     return { ...updatedState, error: updatedFunction.error };
   }
