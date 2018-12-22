@@ -174,5 +174,15 @@ describe('parser', () => {
         { drawCommand: 'drawLine', x1: 10, y1: 0, x2: 0, y2: 0 }
       ]);
     });
+
+    it('returns an error if the first argument is not a number', () => {
+      let state = parseLine('repeat c', initialState);
+      expect(state.error.description).toEqual('Argument is not an integer');
+    });
+
+    it('returns an error if the last instruction is not complete', () => {
+      let state = parseLine('repeat 2 [ forward ]', initialState);
+      expect(state.error.description).toEqual('The last command to repeat is not complete');
+    });
   });
 });

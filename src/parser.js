@@ -92,6 +92,9 @@ const repeat = (instruction, nextArg) => {
       return { ...instruction, inRepeatBlock: true, innerInstructions: [{}] };
     }
     if (nextArg === ']') {
+      if (!instruction.innerInstructions[0].isComplete) {
+        return { error: { description: 'The last command to repeat is not complete' } };
+      }
       const allInstructions = duplicateArrayItems(instruction.innerInstructions.reverse(), instruction.times);
       return {
         ...instruction,
