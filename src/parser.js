@@ -1,22 +1,10 @@
+import { moveDistance } from './language/moveDistance';
+
 const constantValue = value => ({ get: _ => value });
 const parameterValue = parameter => ({ get: state => parseInt(state.collectedParameters[parameter.substring(1)]) });
 const negateIntegerValue = value => ({ get: state => -value.get(state) });
 
-function moveDistance(state, distanceValue) {
-  const { drawCommands, turtle } = state;
-  const newX = distanceValue.get(state) + turtle.x;
-  return {
-    ...state,
-    drawCommands: [
-      ...drawCommands,
-      { drawCommand: 'drawLine', x1: turtle.x, y1: turtle.y, x2: newX, y2: turtle.y }
-    ],
-    turtle: {
-      ...turtle,
-      x: newX
-    }
-  };
-}
+const radians = angle => Math.PI * angle / 180;
 
 function rotate(state, addAngleValue) {
   const { drawCommands, turtle } = state;
