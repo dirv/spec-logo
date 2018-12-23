@@ -33,12 +33,8 @@ const valueOrError = (arg, f) => {
   return f(constantValue(integerArgument));
 };
 
-const parseSingle = ({ currentInstruction }, nextArg) =>
-  valueOrError(nextArg, value => ({
-    ...currentInstruction,
-    isComplete: true,
-    value
-  }));
+const parseSingle = (_, nextArg) =>
+  valueOrError(nextArg, value => ({ isComplete: true, value }));
 
 const waitCommand = seconds => ({ drawCommand: 'wait', seconds: seconds });
 const performWait = state => ({
@@ -60,27 +56,24 @@ const parseRepeat = (state, nextArg) => {
   const { currentInstruction: instruction } = state;
   if (instruction.times) {
     if (!instruction.inRepeatBlock) {
-      return { ...instruction, inRepeatBlock: true };
+      return { inRepeatBlock: true };
     }
     if (nextArg === ']') {
       if (instruction.innerInstructions[0] && !instruction.innerInstructions[0].isComplete) {
         return { error: { description: 'The last command to repeat is not complete' } };
       }
-      return { ...instruction, isComplete: true };
+      return { isComplete: true };
     }
     if (instruction.innerInstructions[0] && instruction.innerInstructions[0].isComplete) {
       const innerState = { ...state, currentInstruction: undefined };
-      return { ...instruction, innerInstructions: [ parseToken(innerState, nextArg).currentInstruction, ...instruction.innerInstructions ] };
+      return { innerInstructions: [ parseToken(innerState, nextArg).currentInstruction, ...instruction.innerInstructions ] };
     } else {
       const [ currentInstruction, ...rest ] = instruction.innerInstructions;
       const innerState = { ...state, currentInstruction: currentInstruction };
-      return { ...instruction, innerInstructions: [ parseToken(innerState, nextArg).currentInstruction, ...rest ] };
+      return { innerInstructions: [ parseToken(innerState, nextArg).currentInstruction, ...rest ] };
     }
   } else {
-    return valueOrError(nextArg, value => ({
-      ...instruction,
-      times: value
-    }));
+    return valueOrError(nextArg, value => ({ times: value }));
   }
 };
 
@@ -94,21 +87,21 @@ const addFunctionParameter = (instruction, nextArg) => ({ ...instruction, parame
 const parseTo = (state, nextArg) => {
   const { currentInstruction: instruction } = state;
   if (!instruction.name) {
-    return { ...instruction, name: nextArg, collectingParameters: true };
+    return { name: nextArg, collectingParameters: true };
   }
   if (instruction.collectingParameters && nextArg.startsWith(':')) {
     return addFunctionParameter(instruction, nextArg);
   }
   if (nextArg === 'end') {
-    return { ...instruction, isComplete: true };
+    return { isComplete: true };
   }
   if (instruction.innerInstructions[0] && instruction.innerInstructions[0].isComplete) {
     const innerState = { ...state, currentInstruction: undefined };
-    return { ...instruction, innerInstructions: [ parseToken(innerState, nextArg).currentInstruction, ...instruction.innerInstructions ] };
+    return { innerInstructions: [ parseToken(innerState, nextArg).currentInstruction, ...instruction.innerInstructions ] };
   } else {
     const [ currentInstruction, ...rest ] = instruction.innerInstructions;
     const innerState = { ...state, currentInstruction: currentInstruction };
-    return { ...instruction, innerInstructions: [ parseToken(innerState, nextArg).currentInstruction, ...rest ], collectingParameters: false };
+    return { innerInstructions: [ parseToken(innerState, nextArg).currentInstruction, ...rest ], collectingParameters: false };
   }
 };
 
@@ -123,7 +116,6 @@ const parseCall = (state, nextArg) => {
   if(nextArg) {
     const nextArgName = func.parameters[Object.keys(instruction.collectedParameters).length];
     instruction = {
-      ...instruction,
       collectedParameters: { ...instruction.collectedParameters, [nextArgName]: nextArg }
     };
   }
@@ -192,11 +184,11 @@ function parseToken(state, nextToken) {
   if (state.error) return state;
   const { currentInstruction } = state;
   if (currentInstruction) {
-    const updatedInstruction = builtInFunctions[currentInstruction.type].parseToken(state, nextToken);
+    const newInstructionProperties = builtInFunctions[currentInstruction.type].parseToken(state, nextToken);
     return {
       ...state,
-      error: updatedInstruction.error,
-      currentInstruction: updatedInstruction
+      error: newInstructionProperties.error,
+      currentInstruction: { ...currentInstruction, ...newInstructionProperties }
     };
   }
   return {
