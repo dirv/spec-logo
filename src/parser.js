@@ -1,64 +1,20 @@
-import { moveDistance } from './language/moveDistance';
-
-const constantValue = value => ({ get: _ => value });
-const parameterValue = parameter => ({ get: state => parseInt(state.collectedParameters[parameter.substring(1)]) });
-const negateIntegerValue = value => ({ get: state => -value.get(state) });
-
-function rotate(state, addAngleValue) {
-  const { drawCommands, turtle } = state;
-  return {
-    drawCommands: drawCommands,
-    turtle: {
-      ...turtle,
-      angle: addAngleValue.get(state) + turtle.angle
-    }
-  };
-}
-
-const changePen = option => state => ({ ...state, pen: { ...state.pen, ...option } });
-
-const valueOrError = (arg, f) => {
-  if (arg.startsWith(':')) {
-    return f(parameterValue(arg));
-  }
-  const integerArgument = parseInt(arg);
-  if (Number.isNaN(integerArgument)) {
-    return {
-      error: {
-        description: 'Argument is not an integer'
-      }
-    }
-  }
-  return f(constantValue(integerArgument));
-};
-
-const parseSingle = (_, nextArg) =>
-  valueOrError(nextArg, value => ({ isComplete: true, value }));
-
-const waitCommand = seconds => ({ drawCommand: 'wait', seconds: seconds });
-const performWait = state => ({
-  drawCommands: [...state.drawCommands, waitCommand(state.currentInstruction.value.get(state))]
-});
-
-const performForward = state => moveDistance(state, state.currentInstruction.value);
-
-const performBackward = state => moveDistance(state, negateIntegerValue(state.currentInstruction.value));
-
-const performLeft = state => rotate(state, negateIntegerValue(state.currentInstruction.value));
-
-const performRight = state => rotate(state, state.currentInstruction.value);
+import { forward, backward, left, right } from './language/movement';
+import { wait } from './language/wait';
+import { penup, pendown } from './language/pen';
+import { valueOrError } from './language/values';
 
 const duplicateArrayItems = (array, times) => Array(times).fill(array).flat();
 
 const parseInnerBlock = (endToken, state, nextArg) => {
   const { currentInstruction: instruction } = state;
+  const latestInstruction = instruction.innerInstructions[0];
   if (nextArg === endToken) {
-    if (instruction.innerInstructions[0] && !instruction.innerInstructions[0].isComplete) {
+    if (latestInstruction && !latestInstruction.isComplete) {
       return { error: { description: 'The last command is not complete' } };
     }
     return { ...instruction, isComplete: true, innerInstructions: instruction.innerInstructions.reverse() };
   }
-  if (instruction.innerInstructions[0] && instruction.innerInstructions[0].isComplete) {
+  if (latestInstruction && latestInstruction.isComplete) {
     const innerState = { ...state, currentInstruction: undefined };
     return { innerInstructions: [ parseToken(innerState, nextArg).currentInstruction, ...instruction.innerInstructions ] };
   } else {
@@ -126,13 +82,7 @@ const performCall = state => {
 };
 
 const builtInFunctions = {
-  forward: { initial: {}, parseToken: parseSingle, perform: performForward },
-  backward: { initial: {}, parseToken: parseSingle, perform: performBackward },
-  left: { initial: {}, parseToken: parseSingle, perform: performLeft },
-  right: { initial: {} , parseToken: parseSingle, perform: performRight },
-  penup: { initial: { isComplete: true }, perform: changePen({ down: false }) },
-  pendown: { initial: { isComplete: true}, perform: changePen({ down: true }) },
-  wait: { initial: {}, parseToken: parseSingle, perform: performWait },
+  forward, backward, left, right, wait, penup, pendown,
   repeat: { initial: { innerInstructions: [] }, parseToken: parseRepeat, perform: performRepeat },
   to: { initial: { innerInstructions: [], parameters: [] }, parseToken: parseTo, perform: performTo },
   call: {initial: { collectedParameters: {} }, parseToken: parseCall, perform: performCall }

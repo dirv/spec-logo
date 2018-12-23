@@ -32,11 +32,6 @@ describe('moveDistance', () => {
       expect(result.turtle.angle).toEqual(0);
     });
 
-    it('maintains other parts of the state', () => {
-      doMove({ a: 123, drawCommands: [], turtle: { x: 0, y: 0, angle: 0 } }, 100);
-      expect(result.a).toEqual(123);
-    });
-
     it('descreases x when moving with a negative direction', () => {
       doMove({ a: 123, drawCommands: [], turtle: { x: 0, y: 0, angle: 0 } }, -100);
       expect(result.turtle.x).toEqual(-100);

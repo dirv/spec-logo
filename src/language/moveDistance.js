@@ -8,7 +8,6 @@ export function moveDistance(state, distanceValue) {
   const newY = turtle.y + Math.sin(radians(angle)) * radius;
 
   return {
-    ...state,
     drawCommands: [
       ...drawCommands,
       { drawCommand: 'drawLine',
