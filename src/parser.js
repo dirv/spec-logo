@@ -113,16 +113,15 @@ const performTo = state => {
 const parseCall = (state, nextArg) => {
   let { currentInstruction: instruction, userDefinedFunctions } = state;
   const func = userDefinedFunctions[instruction.functionName];
+  let collectedParameters = instruction.collectedParameters;
   if(nextArg) {
     const nextArgName = func.parameters[Object.keys(instruction.collectedParameters).length];
-    instruction = {
-      collectedParameters: { ...instruction.collectedParameters, [nextArgName]: nextArg }
-    };
+    collectedParameters = { ...collectedParameters, [nextArgName]: nextArg };
   }
-  if (Object.keys(instruction.collectedParameters).length === func.parameters.length) {
-    return { ...instruction, isComplete: true };
+  if (Object.keys(collectedParameters).length === func.parameters.length) {
+    return { collectedParameters, isComplete: true };
   }
-  return instruction;
+  return { collectedParameters };
 };
 
 const performCall = state => {
@@ -154,8 +153,10 @@ const findFunction = (state, nextArg) => {
     return { currentInstruction: { type: functionName, ...foundFunction.initial } };
   }
   if (Object.keys(userDefinedFunctions).includes(functionName)) {
+    // this is icky. we need to call parseToken once in case there are no args, and the function is already complete. might be cleared up if initial was a function and not a constant
     const foundFunction = builtInFunctions['call'];
-    return { currentInstruction: foundFunction.parseToken({ ...state, currentInstruction: { type: 'call', functionName, ...foundFunction.initial } }) };
+    const initialInstruction = { type: 'call', functionName, ...foundFunction.initial };
+    return { currentInstruction: { ...initialInstruction, ...foundFunction.parseToken({ ...state, currentInstruction: initialInstruction }) } };
   }
   return {
     error: {
