@@ -175,7 +175,7 @@ describe('parser', () => {
 
     it('returns an error if the last instruction is not complete', () => {
       let state = parseLine('repeat 2 [ forward ]', initialState);
-      expect(state.error.description).toEqual('The last command to repeat is not complete');
+      expect(state.error.description).toEqual('The last command is not complete');
     });
   });
 
