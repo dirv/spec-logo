@@ -16,13 +16,10 @@ function rotate(state, addAngleValue) {
   };
 }
 
-const changePen = option => ({ currentInstruction: instruction }, nextArg) => {
-  return {
-    ...instruction,
-    isComplete: true,
-    perform: state => ({ ...state, pen: { ...state.pen, ...option } })
-  };
-};
+const changePen = option => ({
+  isComplete: true,
+  perform: state => ({ ...state, pen: { ...state.pen, ...option } })
+});
 
 const valueOrError = (arg, f) => {
   if (arg.startsWith(':')) {
@@ -41,7 +38,6 @@ const valueOrError = (arg, f) => {
 
 const waitCommand = seconds => ({ drawCommand: 'wait', seconds: seconds });
 const wait = ({ currentInstruction: instruction }, nextArg) =>
-  !nextArg ? instruction :
   valueOrError(nextArg, value => ({
     ...instruction,
     isComplete: true,
@@ -49,7 +45,6 @@ const wait = ({ currentInstruction: instruction }, nextArg) =>
   }));
 
 const forward = ({ currentInstruction: instruction }, nextArg) =>
-  !nextArg ? instruction :
   valueOrError(nextArg, value => ({
     ...instruction,
     isComplete: true,
@@ -57,7 +52,6 @@ const forward = ({ currentInstruction: instruction }, nextArg) =>
   }));
 
 const backward = ({ currentInstruction: instruction }, nextArg) =>
-  !nextArg ? instruction :
   valueOrError(nextArg, value => ({
     ...instruction,
     isComplete: true,
@@ -65,7 +59,6 @@ const backward = ({ currentInstruction: instruction }, nextArg) =>
   }));
 
 const left = ({ currentInstruction: instruction }, nextArg) =>
-  !nextArg ? instruction :
   valueOrError(nextArg, value => ({
     ...instruction,
     isComplete: true,
@@ -73,7 +66,6 @@ const left = ({ currentInstruction: instruction }, nextArg) =>
   }));
 
 const right = ({ currentInstruction: instruction }, nextArg) =>
-  !nextArg ? instruction :
   valueOrError(nextArg, value => ({
     ...instruction,
     isComplete: true,
@@ -84,7 +76,6 @@ const duplicateArrayItems = (array, times) => Array(times).fill(array).flat();
 
 const repeat = (state, nextArg) => {
   const { currentInstruction: instruction } = state;
-  if (!nextArg) return { ...instruction, innerInstructions: [] };
   if (instruction.times) {
     if (!instruction.inRepeatBlock) {
       return { ...instruction, inRepeatBlock: true };
@@ -119,7 +110,6 @@ const repeat = (state, nextArg) => {
 const addFunctionParameter = (instruction, nextArg) => ({ ...instruction, parameters: [ ...instruction.parameters, nextArg.substring(1) ] });
 const to = (state, nextArg) => {
   const { currentInstruction: instruction } = state;
-  if (!nextArg) return { ...instruction, innerInstructions: [], parameters: [] };
   if (!instruction.name) {
     return { ...instruction, name: nextArg, collectingParameters: true };
   }
@@ -146,7 +136,7 @@ const to = (state, nextArg) => {
 const call = (state, nextArg) => {
   let { currentInstruction: instruction, userDefinedFunctions } = state;
   const func = userDefinedFunctions[instruction.functionName];
-  if (nextArg) {
+  if(nextArg) {
     const nextArgName = func.parameters[Object.keys(instruction.collectedParameters).length];
     instruction = {
       ...instruction,
@@ -168,16 +158,16 @@ const call = (state, nextArg) => {
 };
 
 const builtInFunctions = {
-  forward: forward,
-  backward: backward,
-  left: left,
-  right: right,
-  penup: changePen({ down: false }),
-  pendown: changePen({ down: true }),
-  wait: wait,
-  repeat: repeat,
-  to: to,
-  call: call
+  forward: { initial: {}, parseToken: forward },
+  backward: { initial: {}, parseToken: backward },
+  left: { initial: {}, parseToken: left },
+  right: { initial: {} , parseToken: right },
+  penup: { initial: changePen({ down: false }) },
+  pendown: { initial: changePen({ down: true }) },
+  wait: { initial: {}, parseToken: wait },
+  repeat: { initial: { innerInstructions: [] }, parseToken: repeat },
+  to: { initial: { innerInstructions: [], parameters: [] }, parseToken: to },
+  call: {initial: { collectedParameters: {} }, parseToken: call}
 };
 
 const findFunction = (state, nextArg) => {
@@ -185,11 +175,11 @@ const findFunction = (state, nextArg) => {
   const functionName = nextArg;
   const foundFunction = builtInFunctions[functionName];
   if (foundFunction) {
-    return { currentInstruction: foundFunction({ ...state, currentInstruction: { type: functionName } }) };
+    return { currentInstruction: { type: functionName, ...foundFunction.initial } };
   }
   if (Object.keys(userDefinedFunctions).includes(functionName)) {
     const foundFunction = builtInFunctions['call'];
-    return { currentInstruction: foundFunction({ ...state, currentInstruction: { type: 'call', functionName, collectedParameters: {} } }) };
+    return { currentInstruction: foundFunction.parseToken({ ...state, currentInstruction: { type: 'call', functionName, ...foundFunction.initial } }) };
   }
   return {
     error: {
@@ -214,7 +204,7 @@ function parseToken(state, nextToken) {
   if (state.error) return state;
   const { currentInstruction } = state;
   if (currentInstruction) {
-    const updatedInstruction = builtInFunctions[currentInstruction.type](state, nextToken);
+    const updatedInstruction = builtInFunctions[currentInstruction.type].parseToken(state, nextToken);
     return {
       ...state,
       error: updatedInstruction.error,
