@@ -2,7 +2,7 @@ import { parseLine } from '../src/parser';
 
 const pen = { paint: true, down: true };
 const turtle = { x: 0, y: 0, angle: 0 };
-const initialState = { pen, turtle, drawCommands: [], currentFunction: {}, userDefinedFunctions: {}, acceptedLines: [] };
+const initialState = { pen, turtle, drawCommands: [], userDefinedFunctions: {}, acceptedLines: [] };
 
 describe('parser', () => {
   it('moves forward', () => {
@@ -114,13 +114,18 @@ describe('parser', () => {
     expect(state.drawCommands.length).toEqual(1);
   });
 
-  describe('multi-line support', () => {
+  describe('parsing', () => {
     it('accepts commands over multiple lines', () => {
       let state = parseLine('forward', initialState);
       state = parseLine('10', state);
       expect(state.drawCommands).toEqual([
         { drawCommand: 'drawLine', x1: 0, y1: 0, x2: 10, y2: 0 }
       ]);
+    });
+
+    it('accepts multiple commands on the same line', () => {
+      let state = parseLine('forward 10 backward 10', initialState);
+      expect(state.drawCommands.length).toEqual(2);
     });
   });
 

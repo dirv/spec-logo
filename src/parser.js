@@ -7,6 +7,7 @@ const negateIntegerValue = value => ({ get: state => -value.get(state) });
 function rotate(state, addAngleValue) {
   const { drawCommands, turtle } = state;
   return {
+    ...state,
     drawCommands: drawCommands,
     turtle: {
       ...turtle,
@@ -15,7 +16,7 @@ function rotate(state, addAngleValue) {
   };
 }
 
-const changePen = option => (instruction, nextArg) => {
+const changePen = option => ({ currentInstruction: instruction }, nextArg) => {
   return {
     ...instruction,
     isComplete: true,
@@ -39,7 +40,7 @@ const valueOrError = (arg, f) => {
 };
 
 const waitCommand = seconds => ({ drawCommand: 'wait', seconds: seconds });
-const wait = (instruction, nextArg) =>
+const wait = ({ currentInstruction: instruction }, nextArg) =>
   !nextArg ? instruction :
   valueOrError(nextArg, value => ({
     ...instruction,
@@ -47,7 +48,7 @@ const wait = (instruction, nextArg) =>
     perform: state => ({ ...state, drawCommands: [ ...state.drawCommands, waitCommand(value.get(state))] })
   }));
 
-const forward = (instruction, nextArg) =>
+const forward = ({ currentInstruction: instruction }, nextArg) =>
   !nextArg ? instruction :
   valueOrError(nextArg, value => ({
     ...instruction,
@@ -55,7 +56,7 @@ const forward = (instruction, nextArg) =>
     perform: state => moveDistance(state, value)
   }));
 
-const backward = (instruction, nextArg) =>
+const backward = ({ currentInstruction: instruction }, nextArg) =>
   !nextArg ? instruction :
   valueOrError(nextArg, value => ({
     ...instruction,
@@ -63,7 +64,7 @@ const backward = (instruction, nextArg) =>
     perform: state => moveDistance(state, negateIntegerValue(value))
   }));
 
-const left = (instruction, nextArg) =>
+const left = ({ currentInstruction: instruction }, nextArg) =>
   !nextArg ? instruction :
   valueOrError(nextArg, value => ({
     ...instruction,
@@ -71,7 +72,7 @@ const left = (instruction, nextArg) =>
     perform: state => rotate(state, negateIntegerValue(value))
   }));
 
-const right = (instruction, nextArg) =>
+const right = ({ currentInstruction: instruction }, nextArg) =>
   !nextArg ? instruction :
   valueOrError(nextArg, value => ({
     ...instruction,
@@ -81,14 +82,15 @@ const right = (instruction, nextArg) =>
 
 const duplicateArrayItems = (array, times) => Array(times).fill(array).flat();
 
-const repeat = (instruction, nextArg) => {
-  if (!nextArg) return { ...instruction, innerInstructions: [{}] };
+const repeat = (state, nextArg) => {
+  const { currentInstruction: instruction } = state;
+  if (!nextArg) return { ...instruction, innerInstructions: [] };
   if (instruction.times) {
     if (!instruction.inRepeatBlock) {
       return { ...instruction, inRepeatBlock: true };
     }
     if (nextArg === ']') {
-      if (!instruction.innerInstructions[0].isComplete) {
+      if (instruction.innerInstructions[0] && !instruction.innerInstructions[0].isComplete) {
         return { error: { description: 'The last command to repeat is not complete' } };
       }
       const allInstructions = state => duplicateArrayItems(instruction.innerInstructions.reverse(), instruction.times.get(state));
@@ -98,11 +100,13 @@ const repeat = (instruction, nextArg) => {
         perform: state => allInstructions(state).reduce((state, instruction) => instruction.perform(state), state)
       };
     }
-    if (instruction.innerInstructions[0].isComplete) {
-      return { ...instruction, innerInstructions: [ parseToken({}, {}, nextArg), ...instruction.innerInstructions ] };
+    if (instruction.innerInstructions[0] && instruction.innerInstructions[0].isComplete) {
+      const innerState = { ...state, currentInstruction: undefined };
+      return { ...instruction, innerInstructions: [ parseToken(innerState, nextArg).currentInstruction, ...instruction.innerInstructions ] };
     } else {
       const [ currentInstruction, ...rest ] = instruction.innerInstructions;
-      return { ...instruction, innerInstructions: [ parseToken(currentInstruction, {}, nextArg), ...rest ] };
+      const innerState = { ...state, currentInstruction: currentInstruction };
+      return { ...instruction, innerInstructions: [ parseToken(innerState, nextArg).currentInstruction, ...rest ] };
     }
   } else {
     return valueOrError(nextArg, value => ({
@@ -113,8 +117,9 @@ const repeat = (instruction, nextArg) => {
 };
 
 const addFunctionParameter = (instruction, nextArg) => ({ ...instruction, parameters: [ ...instruction.parameters, nextArg.substring(1) ] });
-const to = (instruction, nextArg) => {
-  if (!nextArg) return { ...instruction, innerInstructions: [{}], parameters: [] };
+const to = (state, nextArg) => {
+  const { currentInstruction: instruction } = state;
+  if (!nextArg) return { ...instruction, innerInstructions: [], parameters: [] };
   if (!instruction.name) {
     return { ...instruction, name: nextArg, collectingParameters: true };
   }
@@ -128,15 +133,18 @@ const to = (instruction, nextArg) => {
       perform: state => ({ ...state, userDefinedFunctions: { ...state.userDefinedFunctions, [instruction.name]: instruction } })
     };
   }
-  if (instruction.innerInstructions[0].isComplete) {
-    return { ...instruction, innerInstructions: [ parseToken({}, {}, nextArg), ... instruction.innerInstructions ] };
+  if (instruction.innerInstructions[0] && instruction.innerInstructions[0].isComplete) {
+    const innerState = { ...state, currentInstruction: undefined };
+    return { ...instruction, innerInstructions: [ parseToken(innerState, nextArg).currentInstruction, ...instruction.innerInstructions ] };
   } else {
     const [ currentInstruction, ...rest ] = instruction.innerInstructions;
-    return { ...instruction, innerInstructions: [ parseToken(currentInstruction, {}, nextArg), ...rest ], collectingParameters: false };
+    const innerState = { ...state, currentInstruction: currentInstruction };
+    return { ...instruction, innerInstructions: [ parseToken(innerState, nextArg).currentInstruction, ...rest ], collectingParameters: false };
   }
 };
 
-const call = (instruction, nextArg, userDefinedFunctions) => {
+const call = (state, nextArg) => {
+  let { currentInstruction: instruction, userDefinedFunctions } = state;
   const func = userDefinedFunctions[instruction.functionName];
   if (nextArg) {
     const nextArgName = func.parameters[Object.keys(instruction.collectedParameters).length];
@@ -172,18 +180,16 @@ const builtInFunctions = {
   call: call
 };
 
-const removeEmptyTokens = tokens => tokens.filter(token => token !== '');
-const tokens = line => removeEmptyTokens(line.split(' '));
-
-const findFunction = (userDefinedFunctions, nextArg) => {
+const findFunction = (state, nextArg) => {
+  const { userDefinedFunctions } = state;
   const functionName = nextArg;
   const foundFunction = builtInFunctions[functionName];
   if (foundFunction) {
-    return foundFunction({ type: functionName });
+    return { currentInstruction: foundFunction({ ...state, currentInstruction: { type: functionName } }) };
   }
   if (Object.keys(userDefinedFunctions).includes(functionName)) {
     const foundFunction = builtInFunctions['call'];
-    return foundFunction({ type: 'call', functionName, collectedParameters: {} }, undefined, userDefinedFunctions);
+    return { currentInstruction: foundFunction({ ...state, currentInstruction: { type: 'call', functionName, collectedParameters: {} } }) };
   }
   return {
     error: {
@@ -193,29 +199,49 @@ const findFunction = (userDefinedFunctions, nextArg) => {
   };
 };
 
-export function parseToken(instruction, userDefinedFunctions, nextToken) {
-  if (instruction.error) return instruction;
-  if (instruction.type) {
-    return builtInFunctions[instruction.type](instruction, nextToken, userDefinedFunctions);
+const removeEmptyTokens = tokens => tokens.filter(token => token !== '');
+const tokens = line => removeEmptyTokens(line.split(' '));
+
+function perform(state) {
+  const { currentInstruction } = state;
+  if (currentInstruction && currentInstruction.isComplete) {
+    return currentInstruction.perform({ ...state, currentInstruction: undefined });
   }
-  return findFunction(userDefinedFunctions, nextToken);
+  return state;
+}
+
+function parseToken(state, nextToken) {
+  if (state.error) return state;
+  const { currentInstruction } = state;
+  if (currentInstruction) {
+    const updatedInstruction = builtInFunctions[currentInstruction.type](state, nextToken);
+    return {
+      ...state,
+      error: updatedInstruction.error,
+      currentInstruction: updatedInstruction
+    };
+  }
+  return {
+    ...state,
+    ...findFunction(state, nextToken)
+  };
+}
+
+function parseAndPerform(state, nextToken) {
+  return perform(parseToken(state, nextToken));
 }
 
 export function parseLine(line, state) {
-  const updatedState = { ...state };
-  const updatedFunction = tokens(line).reduce((instruction, nextToken) => parseToken(instruction, state.userDefinedFunctions, nextToken), state.currentFunction);
-  if (updatedFunction.error) {
+  const updatedState = tokens(line).reduce(parseAndPerform, state);
+  if(!updatedState.error) {
     return {
       ...updatedState,
-      error: { ...updatedFunction.error, line: line }
+      acceptedLines: [...updatedState.acceptedLines, line]
     };
-  }
-  if (updatedFunction.isComplete) {
+  } else {
     return {
-      ...updatedFunction.perform(updatedState),
-      acceptedLines: [...updatedState.acceptedLines, line],
-      currentFunction: {}
+      ...updatedState,
+      error: { ...updatedState.error, line }
     };
-  }
-  return { ...updatedState, currentFunction: updatedFunction };
+  };
 }
