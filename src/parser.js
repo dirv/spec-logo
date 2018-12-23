@@ -50,13 +50,13 @@ const performRight = state => rotate(state, state.currentInstruction.value);
 
 const duplicateArrayItems = (array, times) => Array(times).fill(array).flat();
 
-const parseInnerBlock = (endToken, state, nextArg, onComplete) => {
+const parseInnerBlock = (endToken, state, nextArg) => {
   const { currentInstruction: instruction } = state;
   if (nextArg === endToken) {
     if (instruction.innerInstructions[0] && !instruction.innerInstructions[0].isComplete) {
       return { error: { description: 'The last command is not complete' } };
     }
-    return { ...instruction, isComplete: true, innerInstructions: onComplete(instruction.innerInstructions) };
+    return { ...instruction, isComplete: true, innerInstructions: instruction.innerInstructions.reverse() };
   }
   if (instruction.innerInstructions[0] && instruction.innerInstructions[0].isComplete) {
     const innerState = { ...state, currentInstruction: undefined };
@@ -74,15 +74,18 @@ const parseRepeat = (state, nextArg) => {
     if (!instruction.inRepeatBlock) {
       return { inRepeatBlock: true };
     }
-    return parseInnerBlock(']', state, nextArg, innerInstructions => duplicateArrayItems(innerInstructions.reverse(), instruction.times.get(state)));
+    return parseInnerBlock(']', state, nextArg);
   } else {
     return valueOrError(nextArg, value => ({ times: value }));
   }
 };
 
+const performAll = (state, instructions) =>
+  instructions.reduce((state, instruction) => perform({ ...state, currentInstruction: instruction }), state);
+
 const performRepeat = state => {
   const instruction = state.currentInstruction;
-  return instruction.innerInstructions.reduce((state, instruction) => perform({ ...state, currentInstruction: instruction }), state);
+  return performAll(state, duplicateArrayItems(instruction.innerInstructions, instruction.times.get(state)));
 };
 
 const parseTo = (state, nextArg) => {
@@ -94,7 +97,7 @@ const parseTo = (state, nextArg) => {
     return { parameters: [ ...instruction.parameters, nextArg.substring(1) ] };
   }
   const newInstruction = { ...instruction, collectingParameters: false };
-  return parseInnerBlock('end', { ...state, currentInstruction: newInstruction }, nextArg, innerInstructions => innerInstructions.reverse());
+  return parseInnerBlock('end', { ...state, currentInstruction: newInstruction }, nextArg);
 };
 
 const performTo = state => {
@@ -119,7 +122,7 @@ const parseCall = (state, nextArg) => {
 const performCall = state => {
   const instruction = state.currentInstruction;
   state = { ...state, collectedParameters: { ...state.collectedParameters, ...instruction.collectedParameters } };
-  return instruction.innerInstructions.reduce((state, instruction) => perform({ ...state, currentInstruction: instruction }), state);
+  return performAll(state, instruction.innerInstructions);
 };
 
 const builtInFunctions = {
