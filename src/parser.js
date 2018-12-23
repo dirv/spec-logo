@@ -7,7 +7,6 @@ const negateIntegerValue = value => ({ get: state => -value.get(state) });
 function rotate(state, addAngleValue) {
   const { drawCommands, turtle } = state;
   return {
-    ...state,
     drawCommands: drawCommands,
     turtle: {
       ...turtle,
@@ -38,7 +37,6 @@ const parseSingle = (_, nextArg) =>
 
 const waitCommand = seconds => ({ drawCommand: 'wait', seconds: seconds });
 const performWait = state => ({
-  ...state,
   drawCommands: [...state.drawCommands, waitCommand(state.currentInstruction.value.get(state))]
 });
 
@@ -107,7 +105,7 @@ const parseTo = (state, nextArg) => {
 
 const performTo = state => {
   const instruction = state.currentInstruction;
-  return { ...state, userDefinedFunctions: { ...state.userDefinedFunctions, [instruction.name]: instruction } }
+  return { userDefinedFunctions: { ...state.userDefinedFunctions, [instruction.name]: instruction } }
 };
 
 const parseCall = (state, nextArg) => {
@@ -153,10 +151,9 @@ const findFunction = (state, nextArg) => {
     return { currentInstruction: { type: functionName, ...foundFunction.initial } };
   }
   if (Object.keys(userDefinedFunctions).includes(functionName)) {
-    // this is icky. we need to call parseToken once in case there are no args, and the function is already complete. might be cleared up if initial was a function and not a constant
-    const foundFunction = builtInFunctions['call'];
-    const initialInstruction = { type: 'call', functionName, ...foundFunction.initial };
-    return { currentInstruction: { ...initialInstruction, ...foundFunction.parseToken({ ...state, currentInstruction: initialInstruction }) } };
+    const currentInstruction = {
+      type: 'call', functionName,...builtInFunctions['call'].initial };
+    return parseToken({ ... state, currentInstruction });
   }
   return {
     error: {
