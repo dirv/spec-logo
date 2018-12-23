@@ -16,10 +16,7 @@ function rotate(state, addAngleValue) {
   };
 }
 
-const changePen = option => ({
-  isComplete: true,
-  perform: state => ({ ...state, pen: { ...state.pen, ...option } })
-});
+const changePen = option => state => ({ ...state, pen: { ...state.pen, ...option } });
 
 const valueOrError = (arg, f) => {
   if (arg.startsWith(':')) {
@@ -36,45 +33,30 @@ const valueOrError = (arg, f) => {
   return f(constantValue(integerArgument));
 };
 
+const parseSingle = ({ currentInstruction }, nextArg) =>
+  valueOrError(nextArg, value => ({
+    ...currentInstruction,
+    isComplete: true,
+    value
+  }));
+
 const waitCommand = seconds => ({ drawCommand: 'wait', seconds: seconds });
-const wait = ({ currentInstruction: instruction }, nextArg) =>
-  valueOrError(nextArg, value => ({
-    ...instruction,
-    isComplete: true,
-    perform: state => ({ ...state, drawCommands: [ ...state.drawCommands, waitCommand(value.get(state))] })
-  }));
+const performWait = state => ({
+  ...state,
+  drawCommands: [...state.drawCommands, waitCommand(state.currentInstruction.value.get(state))]
+});
 
-const forward = ({ currentInstruction: instruction }, nextArg) =>
-  valueOrError(nextArg, value => ({
-    ...instruction,
-    isComplete: true,
-    perform: state => moveDistance(state, value)
-  }));
+const performForward = state => moveDistance(state, state.currentInstruction.value);
 
-const backward = ({ currentInstruction: instruction }, nextArg) =>
-  valueOrError(nextArg, value => ({
-    ...instruction,
-    isComplete: true,
-    perform: state => moveDistance(state, negateIntegerValue(value))
-  }));
+const performBackward = state => moveDistance(state, negateIntegerValue(state.currentInstruction.value));
 
-const left = ({ currentInstruction: instruction }, nextArg) =>
-  valueOrError(nextArg, value => ({
-    ...instruction,
-    isComplete: true,
-    perform: state => rotate(state, negateIntegerValue(value))
-  }));
+const performLeft = state => rotate(state, negateIntegerValue(state.currentInstruction.value));
 
-const right = ({ currentInstruction: instruction }, nextArg) =>
-  valueOrError(nextArg, value => ({
-    ...instruction,
-    isComplete: true,
-    perform: state => rotate(state, value)
-  }));
+const performRight = state => rotate(state, state.currentInstruction.value);
 
 const duplicateArrayItems = (array, times) => Array(times).fill(array).flat();
 
-const repeat = (state, nextArg) => {
+const parseRepeat = (state, nextArg) => {
   const { currentInstruction: instruction } = state;
   if (instruction.times) {
     if (!instruction.inRepeatBlock) {
@@ -84,12 +66,7 @@ const repeat = (state, nextArg) => {
       if (instruction.innerInstructions[0] && !instruction.innerInstructions[0].isComplete) {
         return { error: { description: 'The last command to repeat is not complete' } };
       }
-      const allInstructions = state => duplicateArrayItems(instruction.innerInstructions.reverse(), instruction.times.get(state));
-      return {
-        ...instruction,
-        isComplete: true,
-        perform: state => allInstructions(state).reduce((state, instruction) => instruction.perform(state), state)
-      };
+      return { ...instruction, isComplete: true };
     }
     if (instruction.innerInstructions[0] && instruction.innerInstructions[0].isComplete) {
       const innerState = { ...state, currentInstruction: undefined };
@@ -107,8 +84,14 @@ const repeat = (state, nextArg) => {
   }
 };
 
+const performRepeat = state => {
+  const instruction = state.currentInstruction;
+  const allInstructions = duplicateArrayItems(instruction.innerInstructions.reverse(), instruction.times.get(state));
+  return allInstructions.reduce((state, instruction) => builtInFunctions[instruction.type].perform({ ...state, currentInstruction: instruction }), state);
+};
+
 const addFunctionParameter = (instruction, nextArg) => ({ ...instruction, parameters: [ ...instruction.parameters, nextArg.substring(1) ] });
-const to = (state, nextArg) => {
+const parseTo = (state, nextArg) => {
   const { currentInstruction: instruction } = state;
   if (!instruction.name) {
     return { ...instruction, name: nextArg, collectingParameters: true };
@@ -117,11 +100,7 @@ const to = (state, nextArg) => {
     return addFunctionParameter(instruction, nextArg);
   }
   if (nextArg === 'end') {
-    return {
-      ...instruction,
-      isComplete: true,
-      perform: state => ({ ...state, userDefinedFunctions: { ...state.userDefinedFunctions, [instruction.name]: instruction } })
-    };
+    return { ...instruction, isComplete: true };
   }
   if (instruction.innerInstructions[0] && instruction.innerInstructions[0].isComplete) {
     const innerState = { ...state, currentInstruction: undefined };
@@ -133,7 +112,12 @@ const to = (state, nextArg) => {
   }
 };
 
-const call = (state, nextArg) => {
+const performTo = state => {
+  const instruction = state.currentInstruction;
+  return { ...state, userDefinedFunctions: { ...state.userDefinedFunctions, [instruction.name]: instruction } }
+};
+
+const parseCall = (state, nextArg) => {
   let { currentInstruction: instruction, userDefinedFunctions } = state;
   const func = userDefinedFunctions[instruction.functionName];
   if(nextArg) {
@@ -144,30 +128,30 @@ const call = (state, nextArg) => {
     };
   }
   if (Object.keys(instruction.collectedParameters).length === func.parameters.length) {
-    const instructions = func.innerInstructions.reverse();
-    return {
-      ...instruction,
-      isComplete: true,
-      perform: state => {
-        state = { ...state, collectedParameters: { ...state.collectedParameters, ...instruction.collectedParameters } };
-        return instructions.reduce((state, instruction) => instruction.perform(state), state);
-      }
-    };
+    return { ...instruction, isComplete: true };
   }
   return instruction;
 };
 
+const performCall = state => {
+  const instruction = state.currentInstruction;
+  const func = state.userDefinedFunctions[instruction.functionName];
+  const allInstructions = func.innerInstructions.reverse();
+  state = { ...state, collectedParameters: { ...state.collectedParameters, ...instruction.collectedParameters } };
+  return allInstructions.reduce((state, instruction) => builtInFunctions[instruction.type].perform({ ...state, currentInstruction: instruction }), state);
+};
+
 const builtInFunctions = {
-  forward: { initial: {}, parseToken: forward },
-  backward: { initial: {}, parseToken: backward },
-  left: { initial: {}, parseToken: left },
-  right: { initial: {} , parseToken: right },
-  penup: { initial: changePen({ down: false }) },
-  pendown: { initial: changePen({ down: true }) },
-  wait: { initial: {}, parseToken: wait },
-  repeat: { initial: { innerInstructions: [] }, parseToken: repeat },
-  to: { initial: { innerInstructions: [], parameters: [] }, parseToken: to },
-  call: {initial: { collectedParameters: {} }, parseToken: call}
+  forward: { initial: {}, parseToken: parseSingle, perform: performForward },
+  backward: { initial: {}, parseToken: parseSingle, perform: performBackward },
+  left: { initial: {}, parseToken: parseSingle, perform: performLeft },
+  right: { initial: {} , parseToken: parseSingle, perform: performRight },
+  penup: { initial: { isComplete: true }, perform: changePen({ down: false }) },
+  pendown: { initial: { isComplete: true}, perform: changePen({ down: true }) },
+  wait: { initial: {}, parseToken: parseSingle, perform: performWait },
+  repeat: { initial: { innerInstructions: [] }, parseToken: parseRepeat, perform: performRepeat },
+  to: { initial: { innerInstructions: [], parameters: [] }, parseToken: parseTo, perform: performTo },
+  call: {initial: { collectedParameters: {} }, parseToken: parseCall, perform: performCall }
 };
 
 const findFunction = (state, nextArg) => {
@@ -195,7 +179,11 @@ const tokens = line => removeEmptyTokens(line.split(' '));
 function perform(state) {
   const { currentInstruction } = state;
   if (currentInstruction && currentInstruction.isComplete) {
-    return currentInstruction.perform({ ...state, currentInstruction: undefined });
+    return {
+      ...state,
+      ...builtInFunctions[currentInstruction.type].perform(state),
+      currentInstruction: undefined
+    };
   }
   return state;
 }
