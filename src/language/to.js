@@ -1,43 +1,26 @@
-import { parseCall, parseNextToken } from './parseCall';
+import { parseCall, parseNextToken, parseNextListValue, finishParsingList } from './parseCall';
 import { parameterValue } from './values';
 import { functionWithName } from './functionTable';
 import { performAll } from './perform';
 
-const parseInnerBlock = (endToken, state, nextArg) => {
-  const { currentInstruction: instruction } = state;
-  const latestInstruction = instruction.innerInstructions[0];
-  if (nextArg === endToken) {
-    if (latestInstruction && !latestInstruction.isComplete) {
-      return { error: { description: 'The last command is not complete' } };
-    }
-    return { ...instruction, isComplete: true, innerInstructions: instruction.innerInstructions.reverse() };
-  }
-  if (latestInstruction && latestInstruction.isComplete) {
-    const innerState = { ...state, currentInstruction: undefined };
-    return { innerInstructions: [ parseNextToken(innerState, nextArg).currentInstruction, ...instruction.innerInstructions ] };
-  } else {
-    const [ currentInstruction, ...rest ] = instruction.innerInstructions;
-    const innerState = { ...state, currentInstruction: currentInstruction };
-    return { ...instruction, innerInstructions: [ parseNextToken(innerState, nextArg).currentInstruction, ...rest ] };
-  }
-};
-
 const parseTo = (state, nextArg) => {
   const { currentInstruction: instruction, allFunctions } = state;
   if (!instruction.name) {
-    const existingFunction = functionWithName(nextArg, allFunctions);
-    if (existingFunction && existingFunction.isWriteProtected) {
-      return {
-        error: { text: `Cannot override the built-in function '${nextArg.toLowerCase()}'` }
-      }
-    }
-    return { name: nextArg, collectingParameters: true };
+    return {
+      name: nextArg,
+      collectingParameters: true,
+      currentListValue: [] };
   }
   if (instruction.collectingParameters && nextArg.startsWith(':')) {
     return { parameters: [ ...instruction.parameters, nextArg.substring(1).toLowerCase() ] };
   }
-  const newInstruction = { ...instruction, collectingParameters: false };
-  return parseInnerBlock('end', { ...state, currentInstruction: newInstruction }, nextArg);
+  if(nextArg === 'end') {
+    return finishParsingList(instruction);
+  }
+  return {
+    ...parseNextListValue(state, nextArg),
+    collectingParameters: false,
+    parsingListValue: true };
 };
 
 const mapObjectValues = (object, f) =>
@@ -60,13 +43,17 @@ const performCall = state => {
 
 const performTo = state => {
   const instruction = state.currentInstruction;
+  const existingFunction = functionWithName(instruction.name, state.allFunctions);
+  if (existingFunction && existingFunction.isWriteProtected) {
+    throw { description: `Cannot override the built-in function '${instruction.name.toLowerCase()}'` };
+  }
   const functionDefinition = {
     names: [instruction.name],
     isWriteProtected: false,
     initial: {
       collectedParameters: {},
       isComplete: instruction.parameters.length === 0,
-      innerInstructions: instruction.innerInstructions
+      innerInstructions: parameterValue('statements').get(state)
     },
     parameters: instruction.parameters,
     parseToken: parseCall,
@@ -81,6 +68,7 @@ export const to = {
   names: [ 'to' ],
   isWriteProtected: true,
   initial: { innerInstructions: [], parameters: [] },
+  parameters: [ 'statements' ],
   parseToken: parseTo,
   perform: performTo
 };

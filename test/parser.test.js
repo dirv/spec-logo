@@ -212,7 +212,7 @@ describe('parser', () => {
 
     it('cannot override built-in functions', () => {
       const state = parseLine('to to end', initialState);
-      expect(state.error.text).toEqual('Cannot override the built-in function \'to\'');
+      expect(state.error.description).toEqual('Cannot override the built-in function \'to\'');
     });
 
     it('can override user-defined functions', () => {

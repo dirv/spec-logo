@@ -49,35 +49,44 @@ export const parseNextToken = (state, nextToken) => {
   };
 };
 
+export const parseNextListValue = (state, nextArg) => {
+  const { collectedParameters, functionDefinition, parsingListValue, currentListValue } = state.currentInstruction;
+  const latestInstruction = currentListValue[0];
+  if (latestInstruction && latestInstruction.isComplete) {
+    const innerState = { ...state, currentInstruction: undefined };
+    return {
+      currentListValue: [ parseNextToken(innerState, nextArg).currentInstruction, ... currentListValue ] };
+  } else {
+    const [ currentInstruction, ...rest ] = currentListValue;
+    const innerState = { ...state, currentInstruction: currentInstruction };
+    return {
+      currentListValue: [ parseNextToken(innerState, nextArg).currentInstruction, ...rest ]
+    };
+  }
+};
+
+export const finishParsingList = ({ collectedParameters, functionDefinition, currentListValue }) => {
+  const latestInstruction = currentListValue[0];
+  if (latestInstruction && !latestInstruction.isComplete) {
+    throw { description: 'The last command is not complete' };
+  }
+  return {
+    ...addNextParameter(collectedParameters, functionDefinition, currentListValue.reverse()),
+    parsingListValue: false,
+    currentListValue: undefined
+  };
+};
+
 export const parseCall = (state, nextArg) => {
   const { collectedParameters, functionDefinition, parsingListValue, currentListValue } = state.currentInstruction;
   if (nextArg === '[') {
     return { parsingListValue: true, currentListValue: [] };
   }
   if (nextArg === ']') {
-    const latestInstruction = currentListValue[0];
-    if (latestInstruction && !latestInstruction.isComplete) {
-      throw { description: 'The last command is not complete' };
-    }
-    return {
-      ...addNextParameter(collectedParameters, functionDefinition, currentListValue.reverse()),
-      parsingListValue: false,
-      currentListValue: undefined
-    };
+    return finishParsingList(state.currentInstruction);
   }
   if (parsingListValue) {
-    const latestInstruction = currentListValue[0];
-    if (latestInstruction && latestInstruction.isComplete) {
-      const innerState = { ...state, currentInstruction: undefined };
-      return {
-        currentListValue: [ parseNextToken(innerState, nextArg).currentInstruction, ... currentListValue ] };
-    } else {
-      const [ currentInstruction, ...rest ] = currentListValue;
-      const innerState = { ...state, currentInstruction: currentInstruction };
-      return {
-        currentListValue: [ parseNextToken(innerState, nextArg).currentInstruction, ...rest ]
-      };
-    }
+    return parseNextListValue(state, nextArg);
   } else {
     return addNextParameter(collectedParameters, functionDefinition, nextArg);
   }
