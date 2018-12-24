@@ -6,10 +6,7 @@ import { performAll } from './perform';
 const parseTo = (state, nextArg) => {
   const { currentInstruction: instruction, allFunctions } = state;
   if (!instruction.name) {
-    return {
-      name: nextArg,
-      collectingParameters: true,
-      currentListValue: [] };
+    return { name: nextArg, collectingParameters: true };
   }
   if (instruction.collectingParameters && nextArg.startsWith(':')) {
     return { parameters: [ ...instruction.parameters, nextArg.substring(1).toLowerCase() ] };
@@ -67,7 +64,7 @@ const performTo = state => {
 export const to = {
   names: [ 'to' ],
   isWriteProtected: true,
-  initial: { innerInstructions: [], parameters: [] },
+  initial: { parameters: [], currentListValue: [] },
   parameters: [ 'statements' ],
   parseToken: parseTo,
   perform: performTo
