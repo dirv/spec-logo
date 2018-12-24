@@ -49,7 +49,7 @@ const parseTo = (state, nextArg) => {
   const { currentInstruction: instruction, allFunctions } = state;
   if (!instruction.name) {
     const existingFunction = functionWithName(nextArg, allFunctions);
-    if (existingFunction && allFunctions[existingFunction].isWriteProtected) {
+    if (existingFunction && existingFunction.isWriteProtected) {
       return {
         error: { text: `Cannot override the built-in function '${nextArg.toLowerCase()}'` }
       }
@@ -85,15 +85,12 @@ const performTo = state => {
   }
 };
 
-const parseCall = (state, nextArg) => {
-  let { currentInstruction: instruction, allFunctions } = state;
-  const func = allFunctions[instruction.type];
-  let collectedParameters = instruction.collectedParameters;
+const parseCall = ({ currentInstruction: { collectedParameters, functionDefinition } }, nextArg) => {
   if(nextArg) {
-    const nextArgName = func.parameters[Object.keys(instruction.collectedParameters).length];
+    const nextArgName = functionDefinition.parameters[Object.keys(collectedParameters).length];
     collectedParameters = { ...collectedParameters, [nextArgName]: nextArg };
   }
-  if (Object.keys(collectedParameters).length === func.parameters.length) {
+  if (Object.keys(collectedParameters).length === functionDefinition.parameters.length) {
     return { collectedParameters, isComplete: true };
   }
   return { collectedParameters };
@@ -123,15 +120,19 @@ export const builtInFunctions = {
 
 const functionWithName = (name, functions) => {
   const lowerCaseName = name.toLowerCase();
-  return Object.keys(functions).find(k => functions[k].names.includes(lowerCaseName));
+  const key = Object.keys(functions).find(k => functions[k].names.includes(lowerCaseName));
+  if (key) return functions[key];
 };
 
 const findFunction = ({ allFunctions }, nextArg) => {
   const functionName = nextArg;
-  const foundFunctionKey = functionWithName(functionName, allFunctions);
-  if (foundFunctionKey) {
+  const foundFunction = functionWithName(functionName, allFunctions);
+  if (foundFunction) {
     return {
-      currentInstruction: { type: foundFunctionKey, ...allFunctions[foundFunctionKey].initial }
+      currentInstruction: {
+        ...foundFunction.initial,
+        functionDefinition: foundFunction
+      }
     };
   }
   return {
@@ -150,7 +151,7 @@ function perform(state) {
   if (currentInstruction && currentInstruction.isComplete) {
     return {
       ...state,
-      ...allFunctions[currentInstruction.type].perform(state),
+      ...currentInstruction.functionDefinition.perform(state),
       currentInstruction: undefined
     };
   }
@@ -161,7 +162,7 @@ function parseToken(state, nextToken) {
   if (state.error) return state;
   const { currentInstruction, allFunctions } = state;
   if (currentInstruction) {
-    const newInstructionProperties = allFunctions[currentInstruction.type].parseToken(state, nextToken);
+    const newInstructionProperties = currentInstruction.functionDefinition.parseToken(state, nextToken);
     return {
       ...state,
       error: newInstructionProperties.error,
