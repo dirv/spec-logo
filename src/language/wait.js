@@ -4,6 +4,7 @@ const waitCommand = seconds => ({ drawCommand: 'wait', seconds: seconds });
 
 export const wait = {
   names: [ 'wait', 'wt' ],
+  isWriteProtected: true,
   initial: {},
   parseToken: parseSingle,
   perform: state => ({

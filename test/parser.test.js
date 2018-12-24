@@ -208,6 +208,17 @@ describe('parser', () => {
         { drawCommand: 'drawLine', x1: 0, y1: 0, x2: 10, y2: 0 }
       ]);
     });
+
+    it('cannot override built-in functions', () => {
+      const state = parseLine('to to end', initialState);
+      expect(state.error.text).toEqual('Cannot override the built-in function \'to\'');
+    });
+
+    it('can override user-defined functions', () => {
+      let state = parseLine('to abc end', initialState);
+      state = parseLine('to abc end', state);
+      expect(state.error).not.toBeDefined();
+    });
   });
 
   describe('repl behavior', () => {

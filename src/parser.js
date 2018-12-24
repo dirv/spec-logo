@@ -46,8 +46,14 @@ const performRepeat = state => {
 };
 
 const parseTo = (state, nextArg) => {
-  const { currentInstruction: instruction } = state;
+  const { currentInstruction: instruction, allFunctions } = state;
   if (!instruction.name) {
+    const existingFunction = functionWithName(nextArg, allFunctions);
+    if (existingFunction && allFunctions[existingFunction].isWriteProtected) {
+      return {
+        error: { text: `Cannot override the built-in function '${nextArg.toLowerCase()}'` }
+      }
+    }
     return { name: nextArg, collectingParameters: true };
   }
   if (instruction.collectingParameters && nextArg.startsWith(':')) {
@@ -59,19 +65,36 @@ const parseTo = (state, nextArg) => {
 
 const performTo = state => {
   const instruction = state.currentInstruction;
-  return { userDefinedFunctions: { ...state.userDefinedFunctions, [instruction.name]: instruction } }
+  const functionDefinition = {
+    names: [instruction.name],
+    isWriteProtected: false,
+    initial: {
+      collectedParameters: {},
+      isComplete: instruction.parameters.length === 0,
+      innerInstructions: instruction.innerInstructions
+    },
+    parameters: instruction.parameters,
+    parseToken: parseCall,
+    perform: performCall
+  };
+  return {
+    allFunctions: {
+      ...state.allFunctions,
+      [instruction.name]: functionDefinition
+    }
+  }
 };
 
 const parseCall = (state, nextArg) => {
-  let { currentInstruction: instruction, userDefinedFunctions } = state;
-  const func = userDefinedFunctions[instruction.functionName];
+  let { currentInstruction: instruction, allFunctions } = state;
+  const func = allFunctions[instruction.type];
   let collectedParameters = instruction.collectedParameters;
   if(nextArg) {
     const nextArgName = func.parameters[Object.keys(instruction.collectedParameters).length];
     collectedParameters = { ...collectedParameters, [nextArgName]: nextArg };
   }
   if (Object.keys(collectedParameters).length === func.parameters.length) {
-    return { collectedParameters, isComplete: true, innerInstructions: func.innerInstructions };
+    return { collectedParameters, isComplete: true };
   }
   return { collectedParameters };
 };
@@ -86,19 +109,16 @@ export const builtInFunctions = {
   forward, backward, left, right, wait, penup, pendown, clearScreen,
   repeat: {
     names: [ 'repeat', 'rp' ],
+    isWriteProtected: true,
     initial: { innerInstructions: [] },
     parseToken: parseRepeat,
     perform: performRepeat },
   to: {
     names: [ 'to' ],
+    isWriteProtected: true,
     initial: { innerInstructions: [], parameters: [] },
     parseToken: parseTo,
-    perform: performTo },
-  call: {
-    names: [ 'call' ],
-    initial: { collectedParameters: {} },
-    parseToken: parseCall,
-    perform: performCall }
+    perform: performTo }
 };
 
 const functionWithName = (name, functions) => {
@@ -106,23 +126,17 @@ const functionWithName = (name, functions) => {
   return Object.keys(functions).find(k => functions[k].names.includes(lowerCaseName));
 };
 
-const findFunction = (state, nextArg) => {
-  const { userDefinedFunctions } = state;
+const findFunction = ({ allFunctions }, nextArg) => {
   const functionName = nextArg;
-  const foundFunctionKey = functionWithName(functionName, builtInFunctions);
+  const foundFunctionKey = functionWithName(functionName, allFunctions);
   if (foundFunctionKey) {
-    return { currentInstruction: { type: foundFunctionKey, ...builtInFunctions[foundFunctionKey].initial } };
-  }
-  if (Object.keys(userDefinedFunctions).includes(functionName.toLowerCase())) {
-    const currentInstruction = {
-      type: 'call',
-      functionName: functionName.toLowerCase(),
-      ...builtInFunctions['call'].initial };
-    return parseToken({ ... state, currentInstruction });
+    return {
+      currentInstruction: { type: foundFunctionKey, ...allFunctions[foundFunctionKey].initial }
+    };
   }
   return {
     error: {
-      description: `Unknown function: ${functionName}`,
+      description: `Unknown function: ${functionName.toLowerCase()}`,
       position: { start: 0, end: functionName.length - 1 }
     }
   };
@@ -132,11 +146,11 @@ const removeEmptyTokens = tokens => tokens.filter(token => token !== '');
 const tokens = line => removeEmptyTokens(line.split(' '));
 
 function perform(state) {
-  const { currentInstruction } = state;
+  const { currentInstruction, allFunctions } = state;
   if (currentInstruction && currentInstruction.isComplete) {
     return {
       ...state,
-      ...builtInFunctions[currentInstruction.type].perform(state),
+      ...allFunctions[currentInstruction.type].perform(state),
       currentInstruction: undefined
     };
   }
@@ -145,9 +159,9 @@ function perform(state) {
 
 function parseToken(state, nextToken) {
   if (state.error) return state;
-  const { currentInstruction } = state;
+  const { currentInstruction, allFunctions } = state;
   if (currentInstruction) {
-    const newInstructionProperties = builtInFunctions[currentInstruction.type].parseToken(state, nextToken);
+    const newInstructionProperties = allFunctions[currentInstruction.type].parseToken(state, nextToken);
     return {
       ...state,
       error: newInstructionProperties.error,
@@ -165,6 +179,9 @@ function parseAndPerform(state, nextToken) {
 }
 
 export function parseLine(line, state) {
+  if (!state.allFunctions) {
+    state = { ...state, allFunctions: builtInFunctions };
+  }
   const updatedState = tokens(line).reduce(parseAndPerform, state);
   if(!updatedState.error) {
     return {
