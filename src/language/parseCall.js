@@ -24,11 +24,9 @@ const findFunction = ({ allFunctions }, nextArg) => {
       }
     };
   }
-  return {
-    error: {
-      description: `Unknown function: ${functionName.toLowerCase()}`,
-      position: { start: 0, end: functionName.length - 1 }
-    }
+  throw {
+    description: `Unknown function: ${functionName.toLowerCase()}`,
+    position: { start: 0, end: functionName.length - 1 }
   };
 };
 
@@ -39,14 +37,10 @@ export const parseNextToken = (state, nextToken) => {
     const newInstructionProperties = currentInstruction.functionDefinition.parseToken(state, nextToken);
     return {
       ...state,
-      error: newInstructionProperties.error,
       currentInstruction: { ...currentInstruction, ...newInstructionProperties }
     };
   }
-  return {
-    ...state,
-    ...findFunction(state, nextToken)
-  };
+  return { ...state, ...findFunction(state, nextToken) };
 };
 
 export const parseNextListValue = (state, nextArg) => {
