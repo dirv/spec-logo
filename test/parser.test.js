@@ -1,4 +1,5 @@
-import { parseLine } from '../src/parser';
+import { parseLine, builtInFunctions } from '../src/parser';
+import { clearScreen } from '../src/language/clearScreen';
 
 const pen = { paint: true, down: true };
 const turtle = { x: 0, y: 0, angle: 0 };
@@ -218,5 +219,11 @@ describe('parser', () => {
         'forward 10', 'backward 10'
       ]);
     });
+  });
+});
+
+describe('built-in functions', () => {
+  it('contains clearScreen', () => {
+    expect(builtInFunctions).toHaveProperty('clearScreen', clearScreen);
   });
 });

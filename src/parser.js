@@ -1,6 +1,7 @@
 import { forward, backward, left, right } from './language/movement';
 import { wait } from './language/wait';
 import { penup, pendown } from './language/pen';
+import { clearScreen } from './language/clearScreen';
 import { valueOrError } from './language/values';
 
 const duplicateArrayItems = (array, times) => Array(times).fill(array).flat();
@@ -81,8 +82,8 @@ const performCall = state => {
   return performAll(state, instruction.innerInstructions);
 };
 
-const builtInFunctions = {
-  forward, backward, left, right, wait, penup, pendown,
+export const builtInFunctions = {
+  forward, backward, left, right, wait, penup, pendown, clearScreen,
   repeat: { initial: { innerInstructions: [] }, parseToken: parseRepeat, perform: performRepeat },
   to: { initial: { innerInstructions: [], parameters: [] }, parseToken: parseTo, perform: performTo },
   call: {initial: { collectedParameters: {} }, parseToken: parseCall, perform: performCall }
