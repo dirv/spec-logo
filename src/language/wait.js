@@ -1,13 +1,15 @@
-import { parseSingle } from './values';
+import { integerParameterValue } from './values';
+import { parseCall } from './parseCall';
 
-const waitCommand = seconds => ({ drawCommand: 'wait', seconds: seconds });
+const waitCommand = (state, seconds) => ({ drawCommand: 'wait', seconds: seconds.get(state) });
 
 export const wait = {
   names: [ 'wait', 'wt' ],
   isWriteProtected: true,
   initial: {},
-  parseToken: parseSingle,
+  parseToken: parseCall,
+  parameters: ['seconds'],
   perform: state => ({
-    drawCommands: [...state.drawCommands, waitCommand(state.currentInstruction.value.get(state))]
+    drawCommands: [...state.drawCommands, waitCommand(state, integerParameterValue('seconds'))]
   })
 }

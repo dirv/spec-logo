@@ -1,11 +1,23 @@
 const constantValue = value => ({ get: _ => value });
-const parameterValue = parameter => ({ get: state => parseInt(state.collectedParameters[parameter.substring(1).toLowerCase()]) });
 
-export const negateIntegerValue = value => ({ get: state => -value.get(state) });
+export const parameterValue = parameter => ({ get: state => {
+  return state.collectedParameters[parameter.toLowerCase()];
+}});
+
+export const integerParameterValue = parameter => ({ get: state => {
+  const argumentValue = state.collectedParameters[parameter.toLowerCase()];
+  const integerArgument = parseInt(argumentValue);
+  if (Number.isNaN(integerArgument)) {
+    throw ({ description: 'Argument is not an integer' });
+  }
+  return integerArgument;
+}});
+
+export const negate = value => ({ get: state => -value.get(state) });
 
 export const valueOrError = (arg, f) => {
   if (arg.startsWith(':')) {
-    return f(parameterValue(arg));
+    return f(parameterValue(arg.substring(1)));
   }
   const integerArgument = parseInt(arg);
   if (Number.isNaN(integerArgument)) {
@@ -17,7 +29,3 @@ export const valueOrError = (arg, f) => {
   }
   return f(constantValue(integerArgument));
 };
-
-export const parseSingle = (_, nextArg) =>
-  valueOrError(nextArg, value => ({ isComplete: true, value }));
-

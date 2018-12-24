@@ -1,10 +1,11 @@
-import { parseSingle, negateIntegerValue } from './values';
+import { negate, integerParameterValue } from './values';
+import { parseCall } from './parseCall';
 import { moveDistance } from './moveDistance';
 
-const rotate = (state, addAngleValue) => {
+const rotate = (state, angleValue) => {
   const { turtle } = state;
   return {
-    turtle: { ...turtle, angle: addAngleValue.get(state) + turtle.angle }
+    turtle: { ...turtle, angle: angleValue.get(state) + turtle.angle }
   };
 };
 
@@ -12,30 +13,34 @@ export const forward = {
   names: [ 'forward', 'fd' ],
   isWriteProtected: true,
   initial: {},
-  parseToken: parseSingle,
-  perform: state => moveDistance(state, state.currentInstruction.value)
+  parseToken: parseCall,
+  parameters: [ 'distance' ],
+  perform: state => moveDistance(state, integerParameterValue('distance'))
 };
 
 export const backward = {
   names: [ 'backward', 'bd' ],
   isWriteProtected: true,
   initial: {},
-  parseToken: parseSingle,
-  perform: state => moveDistance(state, negateIntegerValue(state.currentInstruction.value))
+  parseToken: parseCall,
+  parameters: [ 'distance' ],
+  perform: state => moveDistance(state, negate(integerParameterValue('distance')))
 };
 
 export const left = {
   names: [ 'left', 'lt' ],
   isWriteProtected: true,
   initial: {},
-  parseToken: parseSingle,
-  perform: state => rotate(state, negateIntegerValue(state.currentInstruction.value))
+  parseToken: parseCall,
+  parameters: [ 'angle' ],
+  perform: state => rotate(state, negate(integerParameterValue('angle')))
 };
 
 export const right = {
   names: [ 'right', 'rt' ],
   isWriteProtected: true,
   initial: {},
-  parseToken: parseSingle,
-  perform: state => rotate(state, state.currentInstruction.value)
+  parseToken: parseCall,
+  parameters: [ 'angle' ],
+  perform: state => rotate(state, integerParameterValue('angle'))
 };

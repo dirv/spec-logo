@@ -3,6 +3,8 @@ import { wait } from './language/wait';
 import { penup, pendown } from './language/pen';
 import { clearScreen } from './language/clearScreen';
 import { valueOrError } from './language/values';
+import { parseCall } from './language/parseCall';
+import { parameterValue } from './language/values';
 
 const duplicateArrayItems = (array, times) => Array(times).fill(array).flat();
 
@@ -85,21 +87,22 @@ const performTo = state => {
   }
 };
 
-const parseCall = ({ currentInstruction: { collectedParameters, functionDefinition } }, nextArg) => {
-  if(nextArg) {
-    const nextArgName = functionDefinition.parameters[Object.keys(collectedParameters).length];
-    collectedParameters = { ...collectedParameters, [nextArgName]: nextArg };
-  }
-  if (Object.keys(collectedParameters).length === functionDefinition.parameters.length) {
-    return { collectedParameters, isComplete: true };
-  }
-  return { collectedParameters };
-};
+const mapObjectValues = (object, f) =>
+  Object.keys(object).reduce((mapped, key) => ({ ...mapped, [key]: f(object[key]) }), {});
+
+const insertParameterValues = (parameters, state) =>
+  mapObjectValues(parameters, value => {
+    if (value.startsWith(':')) return parameterValue(value.substring(1)).get(state);
+    return value;
+  });
 
 const performCall = state => {
-  const instruction = state.currentInstruction;
-  state = { ...state, collectedParameters: { ...state.collectedParameters, ...instruction.collectedParameters } };
-  return performAll(state, instruction.innerInstructions);
+  const { innerInstructions } = state.currentInstruction;
+  const instructionsWithParameterValues = innerInstructions.map(instruction => ({
+    ...instruction,
+    collectedParameters: insertParameterValues(instruction.collectedParameters, state)
+  }));
+  return performAll(state, instructionsWithParameterValues);
 };
 
 export const builtInFunctions = {
@@ -131,7 +134,8 @@ const findFunction = ({ allFunctions }, nextArg) => {
     return {
       currentInstruction: {
         ...foundFunction.initial,
-        functionDefinition: foundFunction
+        functionDefinition: foundFunction,
+        collectedParameters: {}
       }
     };
   }
@@ -147,13 +151,18 @@ const removeEmptyTokens = tokens => tokens.filter(token => token !== '');
 const tokens = line => removeEmptyTokens(line.split(' '));
 
 function perform(state) {
-  const { currentInstruction, allFunctions } = state;
+  const { currentInstruction, collectedParameters } = state;
   if (currentInstruction && currentInstruction.isComplete) {
-    return {
-      ...state,
-      ...currentInstruction.functionDefinition.perform(state),
-      currentInstruction: undefined
-    };
+    const stateWithParams = { ...state, collectedParameters: { ...collectedParameters, ...currentInstruction.collectedParameters } };
+    try {
+      return {
+        ...state,
+        ...currentInstruction.functionDefinition.perform(stateWithParams),
+        currentInstruction: undefined
+      };
+    } catch(e) {
+      return { ...state, error: e };
+    }
   }
   return state;
 }
