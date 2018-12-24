@@ -220,6 +220,34 @@ describe('parser', () => {
       ]);
     });
   });
+
+  describe('case-insensitivity', () => {
+    it('matches uppercase forward command', () => {
+      let result = parseLine('FORWARD 10', initialState);
+      expect(result.drawCommands.length).toEqual(1);
+    });
+
+    it('matches uppercase function name', () => {
+      let state = initialState;
+      state = parseLine('to drawsquare forward 10 end', state);
+      state = parseLine('DRAWSQUARE', state);
+      expect(state.drawCommands.length).toEqual(1);
+    });
+
+    it('matches uppercase parameter name', () => {
+      let state = initialState;
+      state = parseLine('to drawsquare :X forward :x end', state);
+      state = parseLine('drawsquare 10', state);
+      expect(state.drawCommands.length).toEqual(1);
+    });
+  });
+
+  describe('aliases', () => {
+    it('matches fd alias', () => {
+      let result = parseLine('fd 10', initialState);
+      expect(result.drawCommands.length).toEqual(1);
+    });
+  });
 });
 
 describe('built-in functions', () => {

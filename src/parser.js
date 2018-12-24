@@ -51,7 +51,7 @@ const parseTo = (state, nextArg) => {
     return { name: nextArg, collectingParameters: true };
   }
   if (instruction.collectingParameters && nextArg.startsWith(':')) {
-    return { parameters: [ ...instruction.parameters, nextArg.substring(1) ] };
+    return { parameters: [ ...instruction.parameters, nextArg.substring(1).toLowerCase() ] };
   }
   const newInstruction = { ...instruction, collectingParameters: false };
   return parseInnerBlock('end', { ...state, currentInstruction: newInstruction }, nextArg);
@@ -84,21 +84,40 @@ const performCall = state => {
 
 export const builtInFunctions = {
   forward, backward, left, right, wait, penup, pendown, clearScreen,
-  repeat: { initial: { innerInstructions: [] }, parseToken: parseRepeat, perform: performRepeat },
-  to: { initial: { innerInstructions: [], parameters: [] }, parseToken: parseTo, perform: performTo },
-  call: {initial: { collectedParameters: {} }, parseToken: parseCall, perform: performCall }
+  repeat: {
+    names: [ 'repeat', 'rp' ],
+    initial: { innerInstructions: [] },
+    parseToken: parseRepeat,
+    perform: performRepeat },
+  to: {
+    names: [ 'to' ],
+    initial: { innerInstructions: [], parameters: [] },
+    parseToken: parseTo,
+    perform: performTo },
+  call: {
+    names: [ 'call' ],
+    initial: { collectedParameters: {} },
+    parseToken: parseCall,
+    perform: performCall }
+};
+
+const functionWithName = (name, functions) => {
+  const lowerCaseName = name.toLowerCase();
+  return Object.keys(functions).find(k => functions[k].names.includes(lowerCaseName));
 };
 
 const findFunction = (state, nextArg) => {
   const { userDefinedFunctions } = state;
   const functionName = nextArg;
-  const foundFunction = builtInFunctions[functionName];
-  if (foundFunction) {
-    return { currentInstruction: { type: functionName, ...foundFunction.initial } };
+  const foundFunctionKey = functionWithName(functionName, builtInFunctions);
+  if (foundFunctionKey) {
+    return { currentInstruction: { type: foundFunctionKey, ...builtInFunctions[foundFunctionKey].initial } };
   }
-  if (Object.keys(userDefinedFunctions).includes(functionName)) {
+  if (Object.keys(userDefinedFunctions).includes(functionName.toLowerCase())) {
     const currentInstruction = {
-      type: 'call', functionName,...builtInFunctions['call'].initial };
+      type: 'call',
+      functionName: functionName.toLowerCase(),
+      ...builtInFunctions['call'].initial };
     return parseToken({ ... state, currentInstruction });
   }
   return {

@@ -1,5 +1,5 @@
 const constantValue = value => ({ get: _ => value });
-const parameterValue = parameter => ({ get: state => parseInt(state.collectedParameters[parameter.substring(1)]) });
+const parameterValue = parameter => ({ get: state => parseInt(state.collectedParameters[parameter.substring(1).toLowerCase()]) });
 
 export const negateIntegerValue = value => ({ get: state => -value.get(state) });
 
