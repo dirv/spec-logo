@@ -1,6 +1,24 @@
+import { forward, backward, left, right } from './movement';
+import { wait } from './wait';
+import { penup, pendown } from './pen';
+import { clearScreen } from './clearScreen';
+import { repeat } from './repeat';
+import { to } from './to';
+
 export const functionWithName = (name, functions) => {
   const lowerCaseName = name.toLowerCase();
-  const key = Object.keys(functions).find(k => functions[k].names.includes(lowerCaseName));
-  if (key) return functions[key];
+  return functions.find(f => f.names.includes(lowerCaseName));
 };
 
+export const builtInFunctions = [
+  forward,
+  backward,
+  left,
+  right,
+  wait,
+  penup,
+  pendown,
+  clearScreen,
+  repeat,
+  to
+];

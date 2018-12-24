@@ -1,13 +1,10 @@
-import { parseLine, builtInFunctions } from '../src/parser';
-import { clearScreen } from '../src/language/clearScreen';
+import { parseLine } from '../src/parser';
 
 const pen = { paint: true, down: true };
 const turtle = { x: 0, y: 0, angle: 0 };
 const initialState = { pen, turtle,
   drawCommands: [],
-  userDefinedFunctions: {},
-  acceptedLines: [],
-  collectedParameters: {} };
+  acceptedLines: [] };
 
 describe('parser', () => {
   it('moves forward', () => {
@@ -262,11 +259,5 @@ describe('parser', () => {
       let result = parseLine('fd 10', initialState);
       expect(result.drawCommands.length).toEqual(1);
     });
-  });
-});
-
-describe('built-in functions', () => {
-  it('contains clearScreen', () => {
-    expect(builtInFunctions).toHaveProperty('clearScreen', clearScreen);
   });
 });

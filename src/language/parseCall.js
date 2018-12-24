@@ -82,4 +82,3 @@ export const parseCall = (state, nextArg) => {
     return addNextParameter(collectedParameters, functionDefinition, nextArg);
   }
 };
-
