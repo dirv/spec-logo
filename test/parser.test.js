@@ -174,7 +174,7 @@ describe('parser', () => {
     });
 
     it('returns an error if the first argument is not a number', () => {
-      let state = parseLine('repeat c', initialState);
+      let state = parseLine('repeat c [ ]', initialState);
       expect(state.error.description).toEqual('Argument is not an integer');
     });
 

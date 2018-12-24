@@ -1,11 +1,85 @@
-export const parseCall = ({ currentInstruction: { collectedParameters, functionDefinition } }, nextArg) => {
-  if(nextArg) {
-    const nextArgName = functionDefinition.parameters[Object.keys(collectedParameters).length];
-    collectedParameters = { ...collectedParameters, [nextArgName]: nextArg };
+import { functionWithName } from './functionTable';
+
+const areAllParametersFilled = (parameters, functionDefinition) =>
+  Object.keys(parameters).length === functionDefinition.parameters.length;
+
+function addNextParameter(existingParameters, functionDefinition, value) {
+  const nextArgName = functionDefinition.parameters[Object.keys(existingParameters).length];
+  const newParameters = { ...existingParameters, [nextArgName]: value };
+  return {
+    collectedParameters: newParameters,
+    isComplete: areAllParametersFilled(newParameters, functionDefinition)
+  };
+}
+
+const findFunction = ({ allFunctions }, nextArg) => {
+  const functionName = nextArg;
+  const foundFunction = functionWithName(functionName, allFunctions);
+  if (foundFunction) {
+    return {
+      currentInstruction: {
+        ...foundFunction.initial,
+        functionDefinition: foundFunction,
+        collectedParameters: {}
+      }
+    };
   }
-  if (Object.keys(collectedParameters).length === functionDefinition.parameters.length) {
-    return { collectedParameters, isComplete: true };
+  return {
+    error: {
+      description: `Unknown function: ${functionName.toLowerCase()}`,
+      position: { start: 0, end: functionName.length - 1 }
+    }
+  };
+};
+
+export const parseNextToken = (state, nextToken) => {
+  if (state.error) return state;
+  const { currentInstruction, allFunctions } = state;
+  if (currentInstruction) {
+    const newInstructionProperties = currentInstruction.functionDefinition.parseToken(state, nextToken);
+    return {
+      ...state,
+      error: newInstructionProperties.error,
+      currentInstruction: { ...currentInstruction, ...newInstructionProperties }
+    };
   }
-  return { collectedParameters };
+  return {
+    ...state,
+    ...findFunction(state, nextToken)
+  };
+};
+
+export const parseCall = (state, nextArg) => {
+  const { collectedParameters, functionDefinition, parsingListValue, currentListValue } = state.currentInstruction;
+  if (nextArg === '[') {
+    return { parsingListValue: true, currentListValue: [] };
+  }
+  if (nextArg === ']') {
+    const latestInstruction = currentListValue[0];
+    if (latestInstruction && !latestInstruction.isComplete) {
+      throw { description: 'The last command is not complete' };
+    }
+    return {
+      ...addNextParameter(collectedParameters, functionDefinition, currentListValue.reverse()),
+      parsingListValue: false,
+      currentListValue: undefined
+    };
+  }
+  if (parsingListValue) {
+    const latestInstruction = currentListValue[0];
+    if (latestInstruction && latestInstruction.isComplete) {
+      const innerState = { ...state, currentInstruction: undefined };
+      return {
+        currentListValue: [ parseNextToken(innerState, nextArg).currentInstruction, ... currentListValue ] };
+    } else {
+      const [ currentInstruction, ...rest ] = currentListValue;
+      const innerState = { ...state, currentInstruction: currentInstruction };
+      return {
+        currentListValue: [ parseNextToken(innerState, nextArg).currentInstruction, ...rest ]
+      };
+    }
+  } else {
+    return addNextParameter(collectedParameters, functionDefinition, nextArg);
+  }
 };
 

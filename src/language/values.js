@@ -14,18 +14,3 @@ export const integerParameterValue = parameter => ({ get: state => {
 }});
 
 export const negate = value => ({ get: state => -value.get(state) });
-
-export const valueOrError = (arg, f) => {
-  if (arg.startsWith(':')) {
-    return f(parameterValue(arg.substring(1)));
-  }
-  const integerArgument = parseInt(arg);
-  if (Number.isNaN(integerArgument)) {
-    return {
-      error: {
-        description: 'Argument is not an integer'
-      }
-    }
-  }
-  return f(constantValue(integerArgument));
-};

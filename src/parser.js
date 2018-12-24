@@ -2,11 +2,12 @@ import { forward, backward, left, right } from './language/movement';
 import { wait } from './language/wait';
 import { penup, pendown } from './language/pen';
 import { clearScreen } from './language/clearScreen';
-import { valueOrError } from './language/values';
+import { repeat } from './language/repeat';
 import { parseCall } from './language/parseCall';
 import { parameterValue } from './language/values';
-
-const duplicateArrayItems = (array, times) => Array(times).fill(array).flat();
+import { parseNextToken } from './language/parseCall';
+import { functionWithName } from './language/functionTable';
+import { perform, performAll } from './language/perform';
 
 const parseInnerBlock = (endToken, state, nextArg) => {
   const { currentInstruction: instruction } = state;
@@ -19,32 +20,12 @@ const parseInnerBlock = (endToken, state, nextArg) => {
   }
   if (latestInstruction && latestInstruction.isComplete) {
     const innerState = { ...state, currentInstruction: undefined };
-    return { innerInstructions: [ parseToken(innerState, nextArg).currentInstruction, ...instruction.innerInstructions ] };
+    return { innerInstructions: [ parseNextToken(innerState, nextArg).currentInstruction, ...instruction.innerInstructions ] };
   } else {
     const [ currentInstruction, ...rest ] = instruction.innerInstructions;
     const innerState = { ...state, currentInstruction: currentInstruction };
-    return { ...instruction, innerInstructions: [ parseToken(innerState, nextArg).currentInstruction, ...rest ] };
+    return { ...instruction, innerInstructions: [ parseNextToken(innerState, nextArg).currentInstruction, ...rest ] };
   }
-};
-
-const parseRepeat = (state, nextArg) => {
-  const { currentInstruction: instruction } = state;
-  if (instruction.times) {
-    if (!instruction.inRepeatBlock) {
-      return { inRepeatBlock: true };
-    }
-    return parseInnerBlock(']', state, nextArg);
-  } else {
-    return valueOrError(nextArg, value => ({ times: value }));
-  }
-};
-
-const performAll = (state, instructions) =>
-  instructions.reduce((state, instruction) => perform({ ...state, currentInstruction: instruction }), state);
-
-const performRepeat = state => {
-  const instruction = state.currentInstruction;
-  return performAll(state, duplicateArrayItems(instruction.innerInstructions, instruction.times.get(state)));
 };
 
 const parseTo = (state, nextArg) => {
@@ -106,13 +87,7 @@ const performCall = state => {
 };
 
 export const builtInFunctions = {
-  forward, backward, left, right, wait, penup, pendown, clearScreen,
-  repeat: {
-    names: [ 'repeat', 'rp' ],
-    isWriteProtected: true,
-    initial: { innerInstructions: [] },
-    parseToken: parseRepeat,
-    perform: performRepeat },
+  forward, backward, left, right, wait, penup, pendown, clearScreen, repeat,
   to: {
     names: [ 'to' ],
     isWriteProtected: true,
@@ -121,71 +96,15 @@ export const builtInFunctions = {
     perform: performTo }
 };
 
-const functionWithName = (name, functions) => {
-  const lowerCaseName = name.toLowerCase();
-  const key = Object.keys(functions).find(k => functions[k].names.includes(lowerCaseName));
-  if (key) return functions[key];
-};
-
-const findFunction = ({ allFunctions }, nextArg) => {
-  const functionName = nextArg;
-  const foundFunction = functionWithName(functionName, allFunctions);
-  if (foundFunction) {
-    return {
-      currentInstruction: {
-        ...foundFunction.initial,
-        functionDefinition: foundFunction,
-        collectedParameters: {}
-      }
-    };
-  }
-  return {
-    error: {
-      description: `Unknown function: ${functionName.toLowerCase()}`,
-      position: { start: 0, end: functionName.length - 1 }
-    }
-  };
-};
-
 const removeEmptyTokens = tokens => tokens.filter(token => token !== '');
 const tokens = line => removeEmptyTokens(line.split(' '));
 
-function perform(state) {
-  const { currentInstruction, collectedParameters } = state;
-  if (currentInstruction && currentInstruction.isComplete) {
-    const stateWithParams = { ...state, collectedParameters: { ...collectedParameters, ...currentInstruction.collectedParameters } };
-    try {
-      return {
-        ...state,
-        ...currentInstruction.functionDefinition.perform(stateWithParams),
-        currentInstruction: undefined
-      };
-    } catch(e) {
-      return { ...state, error: e };
-    }
-  }
-  return state;
-}
-
-function parseToken(state, nextToken) {
-  if (state.error) return state;
-  const { currentInstruction, allFunctions } = state;
-  if (currentInstruction) {
-    const newInstructionProperties = currentInstruction.functionDefinition.parseToken(state, nextToken);
-    return {
-      ...state,
-      error: newInstructionProperties.error,
-      currentInstruction: { ...currentInstruction, ...newInstructionProperties }
-    };
-  }
-  return {
-    ...state,
-    ...findFunction(state, nextToken)
-  };
-}
-
 function parseAndPerform(state, nextToken) {
-  return perform(parseToken(state, nextToken));
+  try {
+    return perform(parseNextToken(state, nextToken));
+  } catch(e) {
+    return {...state, error: e};
+  }
 }
 
 export function parseLine(line, state) {
