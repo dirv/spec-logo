@@ -31,7 +31,6 @@ const findFunction = ({ allFunctions }, nextArg) => {
 };
 
 export const parseNextToken = (state, nextToken) => {
-  if (state.error) return state;
   const { currentInstruction, allFunctions } = state;
   if (currentInstruction) {
     const newInstructionProperties = currentInstruction.functionDefinition.parseToken(state, nextToken);
