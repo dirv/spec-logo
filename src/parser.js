@@ -19,12 +19,11 @@ function performAllFinished(state) {
 
 export function parseStatement(line, state) {
   try {
-    let updatedState = tokens(line).reduce(parseAndSaveStatement, state);
-    updatedState = performAllFinished(updatedState);
+    const updatedState = tokens(line).reduce(parseAndSaveStatement, state);
     if (!updatedState.currentInstruction) {
-      return { ...updatedState, acceptedLines: [...updatedState.acceptedLines, line] };
+      return { ...performAllFinished(updatedState), currentEditLine: '' };
     } else {
-      return state;
+      return { ...state, currentEditLine: line };
     }
   } catch(e) {
     return { ...state, error: { ...e, line } };

@@ -10,7 +10,7 @@ const initialState = { pen, turtle,
   parsedInstructions: [],
   acceptedLines: [] };
 
-describe('parser', () => {
+describe('parseStatement', () => {
   it('moves forward', () => {
     const result = parseStatement('forward 10', initialState );
     expect(result.drawCommands).toEqual([
@@ -133,9 +133,19 @@ describe('parser', () => {
       expect(state.drawCommands.length).toEqual(2);
     });
 
-    it('returns the existing state if statement is not complete', () => {
+    it('does not perform any commands if the statement was incomplete', () => {
       const state = parseStatement('forward', initialState);
-      expect(state).toEqual(initialState);
+      expect(state.drawCommands).toEqual([]);
+    });
+
+    it('returns the entire line of text if the statement was incomplete', () => {
+      const state = parseStatement('forward 10 backward', initialState);
+      expect(state.currentEditLine).toEqual('forward 10 backward');
+    });
+
+    it('returns a blank edit line of text if the statement was completed', () => {
+      const state = parseStatement('forward 10 backward 10', initialState);
+      expect(state.currentEditLine).toEqual('');
     });
   });
 
@@ -227,17 +237,6 @@ describe('parser', () => {
       let state = parseStatement('to abc end', initialState);
       state = parseStatement('to abc end', state);
       expect(state.error).not.toBeDefined();
-    });
-  });
-
-  describe('repl behavior', () => {
-    it('maintains history of all text lines', () => {
-      let state = initialState;
-      state = parseStatement('forward 10', state);
-      state = parseStatement('backward 10', state);
-      expect(state.acceptedLines).toEqual([
-        'forward 10', 'backward 10'
-      ]);
     });
   });
 
