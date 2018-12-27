@@ -4,11 +4,13 @@ import { builtInFunctions } from '../src/language/functionTable';
 const pen = { paint: true, down: true };
 const turtle = { x: 0, y: 0, angle: 0 };
 const initialState = { pen, turtle,
+  nextInstructionId: 0,
   drawCommands: [],
   allFunctions: builtInFunctions,
   collectedParameters: {},
   parsedInstructions: [],
-  acceptedLines: [] };
+  parsedTokens: []
+};
 
 describe('parseStatement', () => {
   it('moves forward', () => {
@@ -265,6 +267,54 @@ describe('parseStatement', () => {
     it('matches fd alias', () => {
       let result = parseStatement('fd 10', initialState);
       expect(result.drawCommands.length).toEqual(1);
+    });
+  });
+
+  describe('tokenizing', () => {
+    let tokenSpy;
+
+    beforeEach(() => {
+      tokenSpy = jest.fn();
+    });
+
+    it('passes whitespace through to current instruction if there is one', () => {
+      let result = parseStatement('; ', {
+        allFunctions: [ { names: [';'], parseToken: tokenSpy, perform: () => {} } ],
+        parsedTokens: []
+      });
+
+      expect(tokenSpy).toHaveBeenCalledWith(expect.anything(), { type: 'whitespace', text: ' ', lineNumber: 1 });
+    });
+
+    it('includes line numbers when parsing multiple lines', () => {
+      let result = parseStatement('; \n ', {
+        allFunctions: [ { names: [';'], parseToken: tokenSpy, perform: () => {} } ],
+        parsedTokens: []
+      });
+
+      expect(tokenSpy).toHaveBeenCalledWith(expect.anything(), { type: 'whitespace', text: ' ', lineNumber: 1 });
+      expect(tokenSpy).toHaveBeenCalledWith(expect.anything(), { type: 'whitespace', text: '\n', lineNumber: 1 });
+      expect(tokenSpy).toHaveBeenCalledWith(expect.anything(), { type: 'whitespace', text: ' ', lineNumber: 2 });
+    });
+
+    it('batches up non-newline whitespace', () => {
+      let result = parseStatement('; \t', {
+        allFunctions: [ { names: [';'], parseToken: tokenSpy, perform: () => {} } ],
+        parsedTokens: []
+      });
+
+      expect(tokenSpy).toHaveBeenCalledWith(expect.anything(), { type: 'whitespace', text: ' \t', lineNumber: 1 });
+    });
+
+    it('starts line numbers at existing script line number', () => {
+      tokenSpy.mockReturnValue({ isComplete: true });
+      let result = parseStatement('; ', {
+        allFunctions: [ { names: [';'], parseToken: tokenSpy, perform: () => { } } ],
+        parsedInstructions: [],
+        parsedTokens: [{ lineNumber: 123 }]
+      });
+
+      expect(result.parsedTokens).toContainEqual({ type: 'token', text: ';', lineNumber: 124 });
     });
   });
 });

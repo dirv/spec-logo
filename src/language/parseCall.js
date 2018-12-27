@@ -12,17 +12,23 @@ function addNextParameter(existingParameters, functionDefinition, value) {
   };
 }
 
-const findFunction = ({ allFunctions }, nextArg) => {
-  const functionName = nextArg;
+const findFunction = ({ allFunctions, nextInstructionId, parsedTokens }, token) => {
+  const { type, text } = token;
+  if (type === 'whitespace') {
+    return {};
+  }
+  const functionName = text;
   const foundFunction = functionWithName(functionName, allFunctions);
   if (foundFunction) {
     return {
       currentInstruction: {
+        id: nextInstructionId,
         ...foundFunction.initial,
         functionDefinition: foundFunction,
-        collectedParameters: {},
-        parsedTokens: [ nextArg ]
-      }
+        collectedParameters: {}
+      },
+      nextInstructionId: nextInstructionId + 1,
+      parsedTokens: [ ...parsedTokens, { ...token, instructionId: nextInstructionId } ]
     };
   }
   throw {
@@ -37,16 +43,22 @@ export const parseNextToken = (state, nextToken) => {
     const updatedInstruction = {
       ...currentInstruction,
       ...currentInstruction.functionDefinition.parseToken(state, nextToken),
-      parsedTokens: [...currentInstruction.parsedTokens, nextToken]
     };
-    return { ...state, currentInstruction: updatedInstruction };
+    return {
+      ...state,
+      currentInstruction: updatedInstruction,
+      parsedTokens: [ ...state.parsedTokens, { ...nextToken, instructionId: updatedInstruction.id } ]
+    };
+  }
+  if (nextToken.type === 'whitespace') {
+    return { ...state, parsedTokens: [ ...state.parsedTokens, nextToken ] };
   }
   return { ...state, ...findFunction(state, nextToken) };
 };
 
 export function parseAndSaveStatement(state, token) {
   const updatedState = parseNextToken(state, token);
-  if(updatedState.currentInstruction.isComplete) {
+  if(updatedState.currentInstruction && updatedState.currentInstruction.isComplete) {
     return {
       ...updatedState,
       parsedInstructions: [ ...updatedState.parsedInstructions, updatedState.currentInstruction ],
@@ -56,18 +68,18 @@ export function parseAndSaveStatement(state, token) {
   return updatedState;
 }
 
-export const parseNextListValue = (state, nextArg) => {
+export const parseNextListValue = (state, token) => {
   const { collectedParameters, functionDefinition, parsingListValue, currentListValue } = state.currentInstruction;
   const latestInstruction = currentListValue[0];
   if (latestInstruction && latestInstruction.isComplete) {
     const innerState = { ...state, currentInstruction: undefined };
     return {
-      currentListValue: [ parseNextToken(innerState, nextArg).currentInstruction, ...currentListValue ] };
+      currentListValue: [ parseNextToken(innerState, token).currentInstruction, ...currentListValue ] };
   } else {
     const [ currentInstruction, ...rest ] = currentListValue;
     const innerState = { ...state, currentInstruction: currentInstruction };
     return {
-      currentListValue: [ parseNextToken(innerState, nextArg).currentInstruction, ...rest ]
+      currentListValue: [ parseNextToken(innerState, token).currentInstruction, ...rest ]
     };
   }
 };
@@ -84,17 +96,18 @@ export const finishParsingList = ({ collectedParameters, functionDefinition, cur
   };
 };
 
-export const parseCall = (state, nextArg) => {
+export const parseCall = (state, token) => {
   const { collectedParameters, functionDefinition, parsingListValue, currentListValue } = state.currentInstruction;
-  if (nextArg === '[') {
+  if (token.type === 'whitespace') return state.currentInstruction;
+  if (token.text === '[') {
     return { parsingListValue: true, currentListValue: [] };
   }
-  if (nextArg === ']') {
+  if (token.text === ']') {
     return finishParsingList(state.currentInstruction);
   }
   if (parsingListValue) {
-    return parseNextListValue(state, nextArg);
+    return parseNextListValue(state, token);
   } else {
-    return addNextParameter(collectedParameters, functionDefinition, nextArg);
+    return addNextParameter(collectedParameters, functionDefinition, token.text);
   }
 };

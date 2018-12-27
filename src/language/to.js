@@ -3,19 +3,20 @@ import { parameterValue } from './values';
 import { functionWithName } from './functionTable';
 import { performAll } from './perform';
 
-const parseTo = (state, nextArg) => {
+const parseTo = (state, token) => {
+  if (token.type === 'whitespace') return state;
   const { currentInstruction: instruction, allFunctions } = state;
   if (!instruction.name) {
-    return { name: nextArg, collectingParameters: true };
+    return { name: token.text, collectingParameters: true };
   }
-  if (instruction.collectingParameters && nextArg.startsWith(':')) {
-    return { parameters: [ ...instruction.parameters, nextArg.substring(1).toLowerCase() ] };
+  if (instruction.collectingParameters && token.text.startsWith(':')) {
+    return { parameters: [ ...instruction.parameters, token.text.substring(1).toLowerCase() ] };
   }
-  if(nextArg === 'end') {
+  if(token.text === 'end') {
     return finishParsingList(instruction);
   }
   return {
-    ...parseNextListValue(state, nextArg),
+    ...parseNextListValue(state, token),
     collectingParameters: false,
     parsingListValue: true };
 };

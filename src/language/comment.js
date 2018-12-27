@@ -3,6 +3,12 @@ export const comment = {
   initial: {},
   isWriteProtected: true,
   parameters: [],
-  parseToken: state => ({ isComplete: true }),
+  parseToken: (state, token) => {
+    if (token.type === 'whitespace' && token.text === '\n') {
+      return { isComplete: true };
+    } else {
+      return { isComplete: false };
+    }
+  },
   perform: state => state
 };

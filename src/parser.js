@@ -2,8 +2,28 @@ import { builtInFunctions } from './language/functionTable';
 import { parseAndSaveStatement } from './language/parseCall';
 import { performAll } from './language/perform';
 
-const removeEmptyTokens = tokens => tokens.filter(token => token !== '');
-const tokens = line => removeEmptyTokens(line.split('\n').map(l => l.split(' ')).flat());
+function tokenizeLine(line, lastLineNumber) {
+  const tokenRegExp = new RegExp(/(\S+)|\n/gm);
+  const tokens = [];
+  let lastIndex = 0;
+  let match;
+  let lineNumber = lastLineNumber + 1;
+  while ((match = tokenRegExp.exec(line)) != null) {
+    if(match.index > lastIndex) {
+      tokens.push({ type: 'whitespace', text: line.substring(lastIndex, match.index), lineNumber: lineNumber });
+    }
+    if (match[0] === '\n') {
+      tokens.push({ type: 'whitespace', text: match[0], lineNumber: lineNumber++ });
+    } else {
+      tokens.push({ type: 'token', text: match[0], lineNumber: lineNumber });
+    }
+    lastIndex = match.index + match[0].length;
+  }
+  if (lastIndex < line.length) {
+    tokens.push({ type: 'whitespace', text: line.substring(lastIndex), lineNumber: lineNumber });
+  }
+  return tokens;
+}
 
 function performAllFinished(state) {
   const updatedState = performAll(
@@ -17,9 +37,18 @@ function performAllFinished(state) {
   };
 }
 
+function lastLineNumber({ parsedTokens }) {
+  return parsedTokens.reduce((highest, token) => {
+    if (token.lineNumber > highest) {
+      return token.lineNumber;
+    } else {
+      return highest;
+    }
+  }, 0);
+}
 export function parseStatement(line, state) {
   try {
-    const updatedState = tokens(line).reduce(parseAndSaveStatement, state);
+    const updatedState = tokenizeLine(line, lastLineNumber(state)).reduce(parseAndSaveStatement, state);
     if (!updatedState.currentInstruction) {
       return { ...performAllFinished(updatedState), currentEditLine: '' };
     } else {
