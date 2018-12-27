@@ -5,7 +5,7 @@ export const parameterValue = parameter => ({ get: state => {
 }});
 
 export const integerParameterValue = parameter => ({ get: state => {
-  const argumentValue = state.collectedParameters[parameter.toLowerCase()];
+  const argumentValue = parameterValue(parameter).get(state);
   const integerArgument = parseInt(argumentValue);
   if (Number.isNaN(integerArgument)) {
     throw ({ description: 'Argument is not an integer' });

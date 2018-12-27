@@ -269,6 +269,3 @@ describe('parser', () => {
     });
   });
 });
-
-describe('parseCurrentLine', () => {
-});
