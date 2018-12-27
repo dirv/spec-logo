@@ -4,6 +4,7 @@ import { penup, pendown } from './pen';
 import { clearScreen } from './clearScreen';
 import { repeat } from './repeat';
 import { to } from './to';
+import { comment } from './comment';
 
 export const functionWithName = (name, functions) => {
   const lowerCaseName = name.toLowerCase();
@@ -20,5 +21,6 @@ export const builtInFunctions = [
   pendown,
   clearScreen,
   repeat,
-  to
+  to,
+  comment
 ];
