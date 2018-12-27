@@ -29,8 +29,7 @@ const insertParameterValues = (parameters, state) =>
     return value;
   });
 
-const performCall = state => {
-  const { innerInstructions } = state.currentInstruction;
+const performCall = (state, { innerInstructions }) => {
   const instructionsWithParameterValues = innerInstructions.map(instruction => ({
     ...instruction,
     collectedParameters: insertParameterValues(instruction.collectedParameters, state)
@@ -38,8 +37,7 @@ const performCall = state => {
   return performAll(state, instructionsWithParameterValues);
 };
 
-const performTo = state => {
-  const instruction = state.currentInstruction;
+const performTo = (state, instruction) => {
   const existingFunction = functionWithName(instruction.name, state.allFunctions);
   if (existingFunction && existingFunction.isWriteProtected) {
     throw { description: `Cannot override the built-in function '${instruction.name.toLowerCase()}'` };

@@ -1,17 +1,14 @@
-export function perform(state) {
-  const { currentInstruction, collectedParameters } = state;
-  if (currentInstruction && currentInstruction.isComplete) {
-    const stateWithParams = { ...state, collectedParameters: { ...collectedParameters, ...currentInstruction.collectedParameters } };
-    return {
-      ...state,
-      ...currentInstruction.functionDefinition.perform(stateWithParams),
-      currentInstruction: undefined
-    };
-  }
-  return state;
+export function perform(state, instruction) {
+  const { collectedParameters } = state;
+  const stateWithParams = {
+    ...state,
+    collectedParameters: { ...collectedParameters, ...instruction.collectedParameters }
+  };
+  return {
+    ...state,
+    ...instruction.functionDefinition.perform(stateWithParams, instruction)
+  };
 }
 
-export const performAll = (state, instructions) => {
-  return instructions.reduce((state, instruction) => perform({ ...state, currentInstruction: instruction }), state);
-};
+export const performAll = (state, instructions) => instructions.reduce(perform, state);
 

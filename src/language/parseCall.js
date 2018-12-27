@@ -20,7 +20,8 @@ const findFunction = ({ allFunctions }, nextArg) => {
       currentInstruction: {
         ...foundFunction.initial,
         functionDefinition: foundFunction,
-        collectedParameters: {}
+        collectedParameters: {},
+        parsedTokens: [ nextArg ]
       }
     };
   }
@@ -33,14 +34,27 @@ const findFunction = ({ allFunctions }, nextArg) => {
 export const parseNextToken = (state, nextToken) => {
   const { currentInstruction, allFunctions } = state;
   if (currentInstruction) {
-    const newInstructionProperties = currentInstruction.functionDefinition.parseToken(state, nextToken);
-    return {
-      ...state,
-      currentInstruction: { ...currentInstruction, ...newInstructionProperties }
+    const updatedInstruction = {
+      ...currentInstruction,
+      ...currentInstruction.functionDefinition.parseToken(state, nextToken),
+      parsedTokens: [...currentInstruction.parsedTokens, nextToken]
     };
+    return { ...state, currentInstruction: updatedInstruction };
   }
   return { ...state, ...findFunction(state, nextToken) };
 };
+
+export function parseAndSaveStatement(state, token) {
+  const updatedState = parseNextToken(state, token);
+  if(updatedState.currentInstruction.isComplete) {
+    return {
+      ...updatedState,
+      parsedInstructions: [ ...updatedState.parsedInstructions, updatedState.currentInstruction ],
+      currentInstruction: undefined
+    };
+  }
+  return updatedState;
+}
 
 export const parseNextListValue = (state, nextArg) => {
   const { collectedParameters, functionDefinition, parsingListValue, currentListValue } = state.currentInstruction;
@@ -48,7 +62,7 @@ export const parseNextListValue = (state, nextArg) => {
   if (latestInstruction && latestInstruction.isComplete) {
     const innerState = { ...state, currentInstruction: undefined };
     return {
-      currentListValue: [ parseNextToken(innerState, nextArg).currentInstruction, ... currentListValue ] };
+      currentListValue: [ parseNextToken(innerState, nextArg).currentInstruction, ...currentListValue ] };
   } else {
     const [ currentInstruction, ...rest ] = currentListValue;
     const innerState = { ...state, currentInstruction: currentInstruction };
