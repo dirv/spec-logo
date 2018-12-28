@@ -240,6 +240,12 @@ describe('parseStatement', () => {
       state = parseStatement('to abc end', state);
       expect(state.error).not.toBeDefined();
     });
+
+    it('handles repeats inside of functions', () => {
+      let state = parseStatement('to abc repeat 2 [ forward 100 ] end', initialState);
+      state = parseStatement('abc', state);
+      expect(state.error).not.toBeDefined();
+    });
   });
 
   describe('case-insensitivity', () => {

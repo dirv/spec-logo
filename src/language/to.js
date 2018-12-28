@@ -1,5 +1,5 @@
 import { parseCall, parseNextToken, parseNextListValue, finishParsingList } from './parseCall';
-import { parameterValue } from './values';
+import { parameterValue, isParameterReference } from './values';
 import { functionWithName } from './functionTable';
 import { performAll } from './perform';
 
@@ -26,7 +26,7 @@ const mapObjectValues = (object, f) =>
 
 const insertParameterValues = (parameters, state) =>
   mapObjectValues(parameters, value => {
-    if (value.startsWith(':')) return parameterValue(value.substring(1)).get(state);
+    if (isParameterReference(value)) return parameterValue(value.substring(1)).get(state);
     return value;
   });
 

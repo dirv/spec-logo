@@ -14,3 +14,5 @@ export const integerParameterValue = parameter => ({ get: state => {
 }});
 
 export const negate = value => ({ get: state => -value.get(state) });
+
+export const isParameterReference = v => typeof v === "string" && v.startsWith(':');
