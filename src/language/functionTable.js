@@ -8,7 +8,8 @@ import { comment } from './comment';
 
 export const functionWithName = (name, functions) => {
   const lowerCaseName = name.toLowerCase();
-  return functions.find(f => f.names.includes(lowerCaseName));
+  return functions.find(f => f.names.map(name => name.toLowerCase())
+    .includes(lowerCaseName));
 };
 
 export const builtInFunctions = [
