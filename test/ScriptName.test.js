@@ -56,6 +56,12 @@ describe('ScriptName', () => {
     it('removes the isEditing class name', () => {
       expect(inputField().hasClass('isEditing')).toBeFalsy();
     });
+
+    it('dispatches a prompt focus request', () => {
+      expectRedux(store)
+      .toDispatchAnAction()
+      .matching({ type: 'PROMPT_FOCUS_REQUEST' });
+    });
   });
 
   describe('when the user moves focus somewhere else', () => {
@@ -71,10 +77,6 @@ describe('ScriptName', () => {
       expectRedux(store)
         .toDispatchAnAction()
         .matching({ type: 'SUBMIT_SCRIPT_NAME', text: 'new name' });
-    });
-
-    it('removes the isEditing class name', () => {
-      expect(inputField().hasClass('isEditing')).toBeFalsy();
     });
   });
 });

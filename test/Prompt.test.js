@@ -90,4 +90,37 @@ describe('Prompt', () => {
     wrapper = wrapper.update();
     expect(inputField().prop('value')).toEqual('right 90');
   });
+
+  describe('prompt focus', () => {
+    it('calls focus on the underlying DOM element if promptFocusRequest is true', async () => {
+      store.dispatch({ type: 'PROMPT_FOCUS_REQUEST' });
+      wrapper = mountWithStore(<Prompt />);
+      await new Promise(setTimeout);
+      expect(document.activeElement.tagName).toEqual('INPUT');
+      wrapper.unmount();
+    });
+
+    it('does not call focus on the underlying DOM element if promptFocusRequest is false', async () => {
+      wrapper = mountWithStore(<Prompt />);
+      expect(document.activeElement.tagName).toEqual('BODY');
+    });
+
+    it('dispatches an action notifying that the prompt has focused', async () => {
+      store.dispatch({ type: 'PROMPT_FOCUS_REQUEST' });
+      wrapper = mountWithStore(<Prompt />);
+      await new Promise(setTimeout);
+      expectRedux(store)
+        .toDispatchAnAction()
+        .matching({ type: 'PROMPT_HAS_FOCUSED' });
+    });
+
+    it('does not dispatch an action if promptFocusRequest was not set', async() => {
+      store.dispatch({ type: 'PROMPT_FOCUS_REQUEST' });
+      wrapper = mountWithStore(<Prompt />);
+      await new Promise(setTimeout);
+      expectRedux(store)
+        .toNotDispatchAnAction()
+        .matching({ type: 'PROMPT_HAS_FOCUSED' });
+    });
+  });
 });

@@ -5,7 +5,8 @@ const { useEffect, useRef, useState } = React;
 const ifEnterKey = (e, func) => { if (e.key === 'Enter') { func(); } };
 
 export const ScriptName = connect(({ script: { name } }) => ({ name }), {
-  submitScriptName: text => ({ type: 'SUBMIT_SCRIPT_NAME', text: text })
+  submitScriptName: text => ({ type: 'SUBMIT_SCRIPT_NAME', text: text }),
+  promptFocusRequest: text => ({ type: 'PROMPT_FOCUS_REQUEST' })
 })(({ name, submitScriptName }) => {
 
   const [ updatedScriptName, setScriptName ] = useState(name);
