@@ -1,6 +1,6 @@
 import React from 'react';
-import { connect } from 'react-redux';
-const { useEffect, useRef, useState } = React;
+import { useDispatch, useMappedState } from 'redux-react-hook';
+const { useEffect, useRef, useState, useCallback } = React;
 
 export const SubmittedPromptLine = ({ text }) => {
   return (
@@ -13,10 +13,11 @@ export const SubmittedPromptLine = ({ text }) => {
 
 const ifEnterKey = (e, func) => { if (e.key === 'Enter') { func(); }; }
 
-export const EditPromptLine = connect(() => ({}), {
-  submitEditLine: text => ({ type: 'SUBMIT_EDIT_LINE', text: text }),
-  promptHasFocused: () => ({ type: 'PROMPT_HAS_FOCUSED' })
-})(({ currentEditPrompt, nonEditableText, submitEditLine, nextInstructionId, focusRequest, promptHasFocused }) => {
+export const EditPromptLine = ({ currentEditPrompt, nonEditableText, nextInstructionId, focusRequest }) => {
+
+  const dispatch = useDispatch();
+  const submitEditLine = useCallback(text => dispatch({ type: 'SUBMIT_EDIT_LINE', text }));
+  const promptHasFocused = useCallback(() => dispatch({ type: 'PROMPT_HAS_FOCUSED' }));
 
   const [ currentInstructionId, setCurrentInstructionId ] = useState(nextInstructionId);
   const [ editPrompt, setEditPrompt ] = useState(currentEditPrompt);
@@ -47,13 +48,16 @@ export const EditPromptLine = connect(() => ({}), {
       </td>
     </tr>
   );
-});
+};
 
 export const exceptLast = xs => xs.slice(0, -1);
 
-export const Prompt = connect(({
-  script: { currentEditLine, nextInstructionId },
-  environment: { promptFocusRequest } }) => ({ currentEditLine, nextInstructionId, promptFocusRequest }), {})(({ currentEditLine, nextInstructionId, promptFocusRequest }) => {
+export const Prompt = () => {
+  const mapState = useCallback(({
+    script: { currentEditLine, nextInstructionId },
+    environment: { promptFocusRequest } }) => ({ currentEditLine, nextInstructionId, promptFocusRequest }), []);
+
+  const { currentEditLine, nextInstructionId, promptFocusRequest } = useMappedState(mapState);
 
   const lines = currentEditLine.split('\n');
 
@@ -66,5 +70,4 @@ export const Prompt = connect(({
       <EditPromptLine currentEditPrompt={lines[lines.length - 1]} nonEditableText={nonEditableText} nextInstructionId={nextInstructionId} focusRequest={promptFocusRequest} />
     </tbody>
   );
-});
-
+};

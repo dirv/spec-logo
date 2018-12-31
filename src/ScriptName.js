@@ -1,13 +1,16 @@
 import React from 'react';
-import { connect } from 'react-redux';
-const { useEffect, useRef, useState } = React;
+import { useDispatch, useMappedState } from 'redux-react-hook';
+const { useEffect, useRef, useState, useCallback } = React;
 
 const ifEnterKey = (e, func) => { if (e.key === 'Enter') { func(); } };
 
-export const ScriptName = connect(({ script: { name } }) => ({ name }), {
-  submitScriptName: text => ({ type: 'SUBMIT_SCRIPT_NAME', text: text }),
-  promptFocusRequest: text => ({ type: 'PROMPT_FOCUS_REQUEST' })
-})(({ name, submitScriptName }) => {
+export const ScriptName = () => {
+  const mapState = useCallback(({ script: { name } }) => ({ name }), []);
+
+  const { name } = useMappedState(mapState);
+  const dispatch = useDispatch();
+  const submitScriptName = useCallback(text => dispatch({ type: 'SUBMIT_SCRIPT_NAME', text }), []);
+  const promptFocusRequest = useCallback(text => dispatch({ type: 'PROMPT_FOCUS_REQUEST' }));
 
   const [ updatedScriptName, setScriptName ] = useState(name);
   const [ editingScriptName, setEditingScriptName ] = useState(false);
@@ -29,4 +32,4 @@ export const ScriptName = connect(({ script: { name } }) => ({ name }), {
     onChange={e => setScriptName(e.target.value) }
     onKeyPress={e => ifEnterKey(e, completeEditingScriptName) }
     onBlur={completeEditingScriptName} />;
-});
+};

@@ -1,6 +1,6 @@
 import React from 'react';
-import { Provider } from 'react-redux';
 import { mount } from 'enzyme';
+import { StoreContext } from 'redux-react-hook';
 import { expectRedux, storeSpy } from 'expect-redux';
 import { configureStore } from '../src/store';
 import { PromptError } from '../src/PromptError';
@@ -14,7 +14,7 @@ describe('PromptError', () => {
   });
 
   function mountWithStore(component) {
-    return mount(<Provider store={store}><table>{component}</table></Provider>);
+    return mount(<StoreContext.Provider value={store}><table>{component}</table></StoreContext.Provider>);
   }
 
   it('renders a tbody', () => {

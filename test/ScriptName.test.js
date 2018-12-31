@@ -1,6 +1,6 @@
 import React from 'react';
-import { Provider } from 'react-redux';
 import { mount } from 'enzyme';
+import { StoreContext } from 'redux-react-hook';
 import { expectRedux, storeSpy } from 'expect-redux';
 import { configureStore } from '../src/store';
 import { ScriptName } from '../src/ScriptName';
@@ -14,7 +14,7 @@ describe('ScriptName', () => {
   });
 
   function mountWithStore(component) {
-    return mount(<Provider store={store}>{component}</Provider>);
+    return mount(<StoreContext.Provider value={store}>{component}</StoreContext.Provider>);
   }
 
   function inputField() {

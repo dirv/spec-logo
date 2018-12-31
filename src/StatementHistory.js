@@ -1,5 +1,6 @@
 import React from 'react';
-import { connect } from 'react-redux';
+import { useMappedState } from 'redux-react-hook';
+const { useCallback } = React;
 
 const groupByLineNumber = tokens => {
   return tokens.reduce((lines, token) => {
@@ -21,7 +22,10 @@ export const LineWithNumber = ({ number, tokens }) => {
   );
 };
 
-export const StatementHistory = connect(({ script: { parsedTokens } }) => ({ parsedTokens }), {})(({ parsedTokens }) => {
+export const StatementHistory = () => {
+  const mapState = useCallback(({script: { parsedTokens } }) => ({ parsedTokens }), []);
+  const { parsedTokens } = useMappedState(mapState);
+
   const lines = groupByLineNumber(parsedTokens);
 
   return (
@@ -29,4 +33,4 @@ export const StatementHistory = connect(({ script: { parsedTokens } }) => ({ par
       {Object.keys(lines).map(lineNumber => <LineWithNumber key={lineNumber} number={lineNumber} tokens={lines[lineNumber]} />)}
     </tbody>
   );
-});
+};

@@ -1,11 +1,14 @@
 import React from 'react';
-import { connect } from 'react-redux';
+import { useMappedState } from 'redux-react-hook';
+const { useCallback } = React;
 
-export const PromptError = connect(({ script: { error } }) => ({ error }), {})(({ error }) => {
+export const PromptError = () => {
+  const mapState = useCallback(({ script: { error } }) => ({ error }), []);
+  const { error } = useMappedState(mapState);
+
   return <tbody key="error">
       <tr>
         <td colSpan="2">{error && error.description}</td>
       </tr>
     </tbody>;
-});
-
+};

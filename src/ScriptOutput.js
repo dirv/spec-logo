@@ -1,8 +1,11 @@
 import React from 'react';
-import { connect } from 'react-redux';
-const { useEffect, useRef, useState } = React;
+import { useMappedState } from 'redux-react-hook';
+const { useCallback } = React;
 
-export const ScriptOutput = connect(({ script: { drawCommands } }) => ({ drawCommands }), {})(({ drawCommands }) => {
+export const ScriptOutput = () => {
+  const mapState = useCallback(({ script: { drawCommands } }) => ({ drawCommands }), []);
+  const { drawCommands } = useMappedState(mapState);
+
   return (
     <div id="viewport">
       <svg viewBox="-300 -300 600 600" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
@@ -10,4 +13,4 @@ export const ScriptOutput = connect(({ script: { drawCommands } }) => ({ drawCom
       </svg>
     </div>
   );
-});
+};
