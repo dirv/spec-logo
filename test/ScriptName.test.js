@@ -48,7 +48,7 @@ describe('ScriptName', () => {
     });
 
     it('submits the new name when the user hits Enter', () => {
-      expectRedux(store)
+      return expectRedux(store)
         .toDispatchAnAction()
         .matching({ type: 'SUBMIT_SCRIPT_NAME', text: 'new name' });
     });
@@ -58,7 +58,7 @@ describe('ScriptName', () => {
     });
 
     it('dispatches a prompt focus request', () => {
-      expectRedux(store)
+      return expectRedux(store)
       .toDispatchAnAction()
       .matching({ type: 'PROMPT_FOCUS_REQUEST' });
     });
@@ -74,7 +74,7 @@ describe('ScriptName', () => {
     });
 
     it('submits the new name when the field loses focus', () => {
-      expectRedux(store)
+      return expectRedux(store)
         .toDispatchAnAction()
         .matching({ type: 'SUBMIT_SCRIPT_NAME', text: 'new name' });
     });

@@ -19,6 +19,7 @@ export const ScriptName = () => {
   const completeEditingScriptName = () => {
     toggleEditingScriptName();
     submitScriptName(updatedScriptName);
+    promptFocusRequest();
   };
 
   const beginEditingScriptName = () => {

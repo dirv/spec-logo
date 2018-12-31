@@ -61,7 +61,7 @@ describe('Prompt', () => {
     wrapper = mountWithStore(<Prompt />);
     inputField().simulate('change', { target: { value: 'right 90 ]' } });
     inputField().simulate('keypress', { key: 'Enter' });
-    expectRedux(store)
+    return expectRedux(store)
       .toDispatchAnAction()
       .matching({ type: 'SUBMIT_EDIT_LINE', text: 'repeat 4\n[ forward 10\nright 90 ]' });
   });
@@ -118,16 +118,15 @@ describe('Prompt', () => {
       store.dispatch({ type: 'PROMPT_FOCUS_REQUEST' });
       wrapper = mountWithStore(<Prompt />);
       await new Promise(setTimeout);
-      expectRedux(store)
+      return expectRedux(store)
         .toDispatchAnAction()
         .matching({ type: 'PROMPT_HAS_FOCUSED' });
     });
 
     it('does not dispatch an action if promptFocusRequest was not set', async() => {
-      store.dispatch({ type: 'PROMPT_FOCUS_REQUEST' });
       wrapper = mountWithStore(<Prompt />);
       await new Promise(setTimeout);
-      expectRedux(store)
+      return expectRedux(store)
         .toNotDispatchAnAction()
         .matching({ type: 'PROMPT_HAS_FOCUSED' });
     });
