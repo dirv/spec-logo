@@ -2,7 +2,12 @@ import { moveDistance } from '../../src/language/moveDistance';
 
 const value = v => ({ get: () => v });
 
-const initialState = { drawCommands: [], turtle: {x: 0, y: 0, angle: 0 }, pen: { down: true } };
+const initialState = {
+  drawCommands: [],
+  turtle: {x: 0, y: 0, angle: 0 },
+  pen: { down: true },
+  nextDrawCommandId: 123
+};
 
 describe('moveDistance', () => {
   let result;
@@ -20,7 +25,7 @@ describe('moveDistance', () => {
     it('adds a new draw command when moving forward', () => {
       doMove(initialState, 100);
       expect(result.drawCommands).toEqual([
-        { drawCommand: 'drawLine', x1: 0, y1: 0, x2: 100, y2: 0 }
+        { drawCommand: 'drawLine', id: 123, x1: 0, y1: 0, x2: 100, y2: 0 }
       ]);
     });
 
@@ -64,6 +69,18 @@ describe('moveDistance', () => {
     it('does not draw line if pen is up', () => {
       doMove({ ...initialState, pen: { down: false } }, 10);
       expect(result.drawCommands).toEqual([]);
+    });
+  });
+
+  describe('next draw command id', () => {
+    it('adds the next id to the next command', () => {
+      doMove({ ...initialState, nextDrawCommandId: 123 }, 100);
+      expect(result.drawCommands[0].id).toEqual(123);
+    });
+
+    it('increases next id after command', () => {
+      doMove({ ...initialState, nextDrawCommandId: 123 }, 100);
+      expect(result.nextDrawCommandId).toEqual(124);
     });
   });
 });

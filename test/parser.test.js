@@ -5,6 +5,7 @@ const pen = { paint: true, down: true };
 const turtle = { x: 0, y: 0, angle: 0 };
 const initialState = { pen, turtle,
   nextInstructionId: 0,
+  nextDrawCommandId: 0,
   drawCommands: [],
   allFunctions: builtInFunctions,
   collectedParameters: {},
@@ -16,21 +17,21 @@ describe('parseStatement', () => {
   it('moves forward', () => {
     const result = parseStatement('forward 10', initialState );
     expect(result.drawCommands).toEqual([
-      { drawCommand: 'drawLine', x1: 0, y1: 0, x2: 10, y2: 0 }
+      { drawCommand: 'drawLine', id: 0, x1: 0, y1: 0, x2: 10, y2: 0 }
     ]);
   });
 
   it('moves forward by a different amount', () => {
     const result = parseStatement('forward 20', initialState );
     expect(result.drawCommands).toEqual([
-      { drawCommand: 'drawLine', x1: 0, y1: 0, x2: 20, y2: 0 }
+      { drawCommand: 'drawLine', id: 0, x1: 0, y1: 0, x2: 20, y2: 0 }
     ]);
   });
 
   it('starts at a different position', () => {
     const result = parseStatement('forward 20', { ...initialState, turtle: { x: 10, y: 10, angle: 0 } });
     expect(result.drawCommands).toEqual([
-      { drawCommand: 'drawLine', x1: 10, y1: 10, x2: 30, y2: 10 }
+      { drawCommand: 'drawLine', id: 0, x1: 10, y1: 10, x2: 30, y2: 10 }
     ]);
   });
 
@@ -68,7 +69,7 @@ describe('parseStatement', () => {
   it('moves backward', () => {
     const result = parseStatement('backward 10', initialState );
     expect(result.drawCommands).toEqual([
-      { drawCommand: 'drawLine', x1: 0, y1: 0, x2: -10, y2: 0 }
+      { drawCommand: 'drawLine', id: 0, x1: 0, y1: 0, x2: -10, y2: 0 }
     ]);
   });
 
@@ -98,10 +99,7 @@ describe('parseStatement', () => {
     it('records multiple events', () => {
       let state = parseStatement('forward 10', initialState);
       state = parseStatement('forward 10', state);
-      expect(state.drawCommands).toEqual([
-        { drawCommand: 'drawLine', x1: 0, y1: 0, x2: 10, y2: 0 },
-        { drawCommand: 'drawLine', x1: 10, y1: 0, x2: 20, y2: 0 }
-      ]);
+      expect(state.drawCommands.length).toEqual(2);
     });
 
     it('returns error if value is not an integer', () => {
@@ -125,9 +123,7 @@ describe('parseStatement', () => {
   describe('parsing', () => {
     it('accepts commands over multiple lines', () => {
       const state = parseStatement('forward\n10', initialState);
-      expect(state.drawCommands).toEqual([
-        { drawCommand: 'drawLine', x1: 0, y1: 0, x2: 10, y2: 0 }
-      ]);
+      expect(state.drawCommands.length).toEqual(1);
     });
 
     it('accepts multiple commands on the same line', () => {
@@ -174,19 +170,19 @@ describe('parseStatement', () => {
     it('repeats an instruction many times', () => {
       let state = parseStatement('repeat 3 [ forward 10 ]', initialState);
       expect(state.drawCommands).toEqual([
-        { drawCommand: 'drawLine', x1: 0, y1: 0, x2: 10, y2: 0 },
-        { drawCommand: 'drawLine', x1: 10, y1: 0, x2: 20, y2: 0 },
-        { drawCommand: 'drawLine', x1: 20, y1: 0, x2: 30, y2: 0 },
+        { drawCommand: 'drawLine', id: 0, x1: 0, y1: 0, x2: 10, y2: 0 },
+        { drawCommand: 'drawLine', id: 1, x1: 10, y1: 0, x2: 20, y2: 0 },
+        { drawCommand: 'drawLine', id: 2, x1: 20, y1: 0, x2: 30, y2: 0 },
       ]);
     });
 
     it('repeats multiple instructions', () => {
       let state = parseStatement('repeat 2 [ forward 10 backward 10 ]', initialState);
       expect(state.drawCommands).toEqual([
-        { drawCommand: 'drawLine', x1: 0, y1: 0, x2: 10, y2: 0 },
-        { drawCommand: 'drawLine', x1: 10, y1: 0, x2: 0, y2: 0 },
-        { drawCommand: 'drawLine', x1: 0, y1: 0, x2: 10, y2: 0 },
-        { drawCommand: 'drawLine', x1: 10, y1: 0, x2: 0, y2: 0 }
+        { drawCommand: 'drawLine', id: 0, x1: 0, y1: 0, x2: 10, y2: 0 },
+        { drawCommand: 'drawLine', id: 1, x1: 10, y1: 0, x2: 0, y2: 0 },
+        { drawCommand: 'drawLine', id: 2, x1: 0, y1: 0, x2: 10, y2: 0 },
+        { drawCommand: 'drawLine', id: 3, x1: 10, y1: 0, x2: 0, y2: 0 }
       ]);
     });
 
@@ -201,13 +197,13 @@ describe('parseStatement', () => {
     });
   });
 
-  describe('functions', () => {
+  describe('user-defined functions', () => {
     it('defines a function with no parameters that can be called', () => {
       let state = initialState;
       state = parseStatement('to drawsquare forward 10 end', state);
       state = parseStatement('drawsquare', state);
       expect(state.drawCommands).toEqual([
-        { drawCommand: 'drawLine', x1: 0, y1: 0, x2: 10, y2: 0 }
+        { drawCommand: 'drawLine', id: 0, x1: 0, y1: 0, x2: 10, y2: 0 }
       ]);
     });
 
@@ -216,8 +212,8 @@ describe('parseStatement', () => {
       state = parseStatement('to drawsquare forward 10 backward 10 end', state);
       state = parseStatement('drawsquare', state);
       expect(state.drawCommands).toEqual([
-        { drawCommand: 'drawLine', x1: 0, y1: 0, x2: 10, y2: 0 },
-        { drawCommand: 'drawLine', x1: 10, y1: 0, x2: 0, y2: 0 }
+        { drawCommand: 'drawLine', id: 0, x1: 0, y1: 0, x2: 10, y2: 0 },
+        { drawCommand: 'drawLine', id: 1, x1: 10, y1: 0, x2: 0, y2: 0 }
       ]);
     });
 
@@ -226,7 +222,7 @@ describe('parseStatement', () => {
       state = parseStatement('to drawsquare :x forward :x end', state);
       state = parseStatement('drawsquare 10', state);
       expect(state.drawCommands).toEqual([
-        { drawCommand: 'drawLine', x1: 0, y1: 0, x2: 10, y2: 0 }
+        { drawCommand: 'drawLine', id: 0, x1: 0, y1: 0, x2: 10, y2: 0 }
       ]);
     });
 
