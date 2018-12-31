@@ -33,6 +33,10 @@ export const EditPromptLine = ({ currentEditPrompt, nonEditableText, nextInstruc
       inputRef.current.focus();
       promptHasFocused();
     }
+  }, [focusRequest]);
+
+  useEffect(() => {
+    inputRef.current.focus();
   }, [inputRef]);
 
   return (

@@ -92,17 +92,26 @@ describe('Prompt', () => {
   });
 
   describe('prompt focus', () => {
-    it('calls focus on the underlying DOM element if promptFocusRequest is true', async () => {
-      store.dispatch({ type: 'PROMPT_FOCUS_REQUEST' });
+    function jsdomClearFocus(f) {
+      const node = document.createElement('input');
+      document.body.appendChild(node);
+      node.focus();
+      node.remove();
+    }
+
+    it('sets focus when component first mounts', async () => {
       wrapper = mountWithStore(<Prompt />);
       await new Promise(setTimeout);
-      expect(document.activeElement.tagName).toEqual('INPUT');
-      wrapper.unmount();
+      expect(document.activeElement).toEqual(inputField().getDOMNode());
     });
 
-    it('does not call focus on the underlying DOM element if promptFocusRequest is false', async () => {
+    it('calls focus on the underlying DOM element if promptFocusRequest is true', async () => {
       wrapper = mountWithStore(<Prompt />);
-      expect(document.activeElement.tagName).toEqual('BODY');
+      await new Promise(setTimeout);
+      jsdomClearFocus();
+      store.dispatch({ type: 'PROMPT_FOCUS_REQUEST' });
+      await new Promise(setTimeout);
+      expect(document.activeElement).toEqual(inputField().getDOMNode());
     });
 
     it('dispatches an action notifying that the prompt has focused', async () => {
