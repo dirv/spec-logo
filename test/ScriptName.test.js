@@ -39,9 +39,9 @@ describe('ScriptName', () => {
   });
 
   describe('when the user hits Enter', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
       wrapper = mountWithStore(<ScriptName />);
-      inputField().simulate('focus');
+      await inputField().simulate('focus');
       inputField().simulate('change', { target: { value: 'new name' } });
       inputField().simulate('keypress', { key: 'Enter' });
       wrapper = wrapper.update();
@@ -59,8 +59,14 @@ describe('ScriptName', () => {
 
     it('dispatches a prompt focus request', () => {
       return expectRedux(store)
-      .toDispatchAnAction()
-      .matching({ type: 'PROMPT_FOCUS_REQUEST' });
+        .toDispatchAnAction()
+        .matching({ type: 'PROMPT_FOCUS_REQUEST' });
+    });
+
+    it('does not resubmit when losing focus after change', async () => {
+      await inputField().simulate('blur');
+      wrapper = wrapper.update();
+      expect(inputField().hasClass('isEditing')).toBeFalsy();
     });
   });
 
