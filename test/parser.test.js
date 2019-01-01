@@ -10,7 +10,8 @@ const initialState = { pen, turtle,
   allFunctions: builtInFunctions,
   collectedParameters: {},
   parsedInstructions: [],
-  parsedTokens: []
+  parsedTokens: [],
+  name: 'Unnamed script'
 };
 
 describe('parseStatement', () => {
@@ -240,6 +241,12 @@ describe('parseStatement', () => {
     it('handles repeats inside of functions', () => {
       let state = parseStatement('to abc repeat 2 [ forward 100 ] end', initialState);
       state = parseStatement('abc', state);
+      expect(state.error).not.toBeDefined();
+    });
+
+    it('allows multi-line function definitions', () => {
+      let state = parseStatement('to abc\n', initialState);
+      //state = parseStatement('abc', state);
       expect(state.error).not.toBeDefined();
     });
   });

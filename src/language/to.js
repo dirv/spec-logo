@@ -4,16 +4,16 @@ import { functionWithName } from './functionTable';
 import { performAll } from './perform';
 
 const parseTo = (state, token) => {
-  if (token.type === 'whitespace') return state;
-  const { currentInstruction: instruction, allFunctions } = state;
-  if (!instruction.name) {
+  if (token.type === 'whitespace') return {};
+  const { currentInstruction, allFunctions } = state;
+  if (!currentInstruction.name) {
     return { name: token.text, collectingParameters: true };
   }
-  if (instruction.collectingParameters && token.text.startsWith(':')) {
-    return { parameters: [ ...instruction.parameters, token.text.substring(1).toLowerCase() ] };
+  if (currentInstruction.collectingParameters && token.text.startsWith(':')) {
+    return { parameters: [ ...currentInstruction.parameters, token.text.substring(1).toLowerCase() ] };
   }
   if(token.text === 'end') {
-    return finishParsingList(instruction);
+    return finishParsingList(currentInstruction);
   }
   return {
     ...parseNextListValue(state, token),
