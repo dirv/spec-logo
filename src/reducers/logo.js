@@ -21,7 +21,7 @@ export const logoReducer = (state = defaultState, action) => {
     case 'SUBMIT_SCRIPT_NAME':
       return { ... state, name: action.text };
     case 'SUBMIT_EDIT_LINE':
-      return parseStatement(action.text + '\n', { ...state, error: undefined });
+      return parseStatement(action.text, { ...state, error: undefined });
     default:
       return state;
   }

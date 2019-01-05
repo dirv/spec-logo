@@ -21,9 +21,9 @@ describe('logoReducer', () => {
       parser.parseStatement = parserSpy;
     });
 
-    it('appends a new line onto the statement', () => {
+    it('passes text through to parser', () => {
       const result = reducer(undefined, action);
-      expect(parserSpy).toHaveBeenCalledWith('statement\n', expect.anything());
+      expect(parserSpy).toHaveBeenCalledWith('statement', expect.anything());
     });
 
     it('passes through state with error removed', () => {

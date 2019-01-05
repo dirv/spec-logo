@@ -56,7 +56,7 @@ svg {
   height: 30px;
 }
 
-input {
+textarea {
   font-family: monospace;
   font-size: 1em;
   outline: none;

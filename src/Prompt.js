@@ -2,60 +2,6 @@ import React from 'react';
 import { useDispatch, useMappedState } from 'redux-react-hook';
 const { useEffect, useRef, useState, useCallback } = React;
 
-export const SubmittedPromptLine = ({ text }) => {
-  return (
-    <tr>
-      <td className="promptIndicator">&gt;</td>
-      <td>{text}</td>
-    </tr>
-  );
-};
-
-const ifEnterKey = (e, func) => { if (e.key === 'Enter') { func(); }; }
-
-export const EditPromptLine = ({ currentEditPrompt, nonEditableText, nextInstructionId, focusRequest }) => {
-
-  const dispatch = useDispatch();
-  const submitEditLine = useCallback(text => dispatch({ type: 'SUBMIT_EDIT_LINE', text }));
-  const promptHasFocused = useCallback(() => dispatch({ type: 'PROMPT_HAS_FOCUSED' }));
-
-  const [ currentInstructionId, setCurrentInstructionId ] = useState(nextInstructionId);
-  const [ editPrompt, setEditPrompt ] = useState(currentEditPrompt);
-  const inputRef = useRef();
-
-  if (currentInstructionId != nextInstructionId) {
-    setCurrentInstructionId(nextInstructionId);
-    setEditPrompt(currentEditPrompt);
-  }
-
-  useEffect(() => {
-    if (focusRequest) {
-      inputRef.current.focus();
-      promptHasFocused();
-    }
-  }, [focusRequest]);
-
-  useEffect(() => {
-    inputRef.current.focus();
-  }, [inputRef]);
-
-  return (
-    <tr key={`prompt-edit}`}>
-      <td className="promptIndicator">&gt;</td>
-      <td>
-        <input type="text"
-          id="editLine"
-          value={editPrompt}
-          onChange={e => setEditPrompt(e.target.value)}
-          onKeyPress={e => ifEnterKey(e, () => { submitEditLine(nonEditableText + editPrompt) })}
-          ref={inputRef} />
-      </td>
-    </tr>
-  );
-};
-
-export const exceptLast = xs => xs.slice(0, -1);
-
 export const Prompt = () => {
   const mapState = useCallback(({
     script: { currentEditLine, nextInstructionId },
@@ -63,15 +9,68 @@ export const Prompt = () => {
 
   const { currentEditLine, nextInstructionId, promptFocusRequest } = useMappedState(mapState);
 
-  const lines = currentEditLine.split('\n');
+  const dispatch = useDispatch();
+  const submitEditLine = useCallback(text => {
+    dispatch({ type: 'SUBMIT_EDIT_LINE', text });
+  }
+  );
+  const promptHasFocused = useCallback(() => dispatch({ type: 'PROMPT_HAS_FOCUSED' }));
 
-  const lastNewLine = currentEditLine.lastIndexOf('\n');
-  const nonEditableText = currentEditLine.slice(0, lastNewLine + 1);
+  const handleKeyPress = useCallback(e => {
+    if (e.key === 'Enter') {
+      setShouldSubmit(true);
+    }
+  });
+
+  const handleChange = useCallback(e => {
+    setEditPrompt(e.target.value);
+    if(shouldSubmit) {
+      submitEditLine(e.target.value);
+      setShouldSubmit(false);
+    }
+  });
+
+  const handleScroll = useCallback(e => setHeight(e.target.scrollHeight));
+
+  const [ editPrompt, setEditPrompt ] = useState(currentEditLine);
+  const [ shouldSubmit, setShouldSubmit ] = useState(false);
+
+  const [ currentInstructionId, setCurrentInstructionId ] = useState(nextInstructionId);
+
+  const [ height, setHeight ] = useState(20);
+
+  const inputRef = useRef();
+
+  if (currentInstructionId != nextInstructionId) {
+    setCurrentInstructionId(nextInstructionId);
+    setEditPrompt(currentEditLine);
+    setHeight(20);
+  }
+
+  useEffect(() => {
+    if (promptFocusRequest) {
+      inputRef.current.focus();
+      promptHasFocused();
+    }
+  }, [promptFocusRequest]);
+
+  useEffect(() => {
+    inputRef.current.focus();
+  }, [inputRef]);
 
   return (
     <tbody key="prompt">
-      {exceptLast(lines).map((line, i) => <SubmittedPromptLine key={i} text={line} />)}
-      <EditPromptLine currentEditPrompt={lines[lines.length - 1]} nonEditableText={nonEditableText} nextInstructionId={nextInstructionId} focusRequest={promptFocusRequest} />
+    <tr>
+      <td className="promptIndicator">&gt;</td>
+    <td>
+      <textarea onScroll={handleScroll}
+                value={editPrompt}
+                ref={inputRef}
+                style={{height: height}}
+                onChange={handleChange}
+                onKeyPress={handleKeyPress} />
+    </td>
+    </tr>
     </tbody>
   );
 };
