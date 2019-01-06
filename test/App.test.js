@@ -1,6 +1,7 @@
 import React from 'react';
 import { shallow } from 'enzyme';
 import { App } from '../src/App';
+import { MenuButtons } from '../src/MenuButtons';
 import { StatementHistory } from '../src/StatementHistory';
 import { ScriptName } from '../src/ScriptName';
 import { ScriptOutput } from '../src/ScriptOutput';
@@ -14,8 +15,12 @@ describe('App', () => {
     wrapper = shallow(<App />);
   });
 
-  it('renders a ScriptName component in div#menu', () => {
-    expect(wrapper.find('#menu > ScriptName').exists()).toBeTruthy();
+  it('renders a ScriptName component as the first item in  the menu', () => {
+    expect(wrapper.find('#menu').childAt(0).type()).toEqual(ScriptName);
+  });
+
+  it('renders a MenuButtons component as the second items in the menu', () => {
+    expect(wrapper.find('#menu').childAt(1).type()).toEqual(MenuButtons);
   });
 
   it('renders a ScriptOutput component in div#drawing', () => {

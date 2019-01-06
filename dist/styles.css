@@ -94,18 +94,23 @@ td.promptIndicator {
   padding-right: 5px;
 }
 
-a {
-  background: #eee;
+button {
+  background: black;
+  color: white;
   font-family: Arial, Helvetica;
   font-size: 0.8em;
   border-radius: 3px;
-  height: 18px;
+  height: 30px;
   padding: 5px;
   margin: 3px;
 }
 
-a:last-child {
+button:last-child {
   margin-right: 0px;
+}
+
+button:disabled {
+  background: #888;
 }
 
 #menu {
@@ -123,6 +128,9 @@ a:last-child {
 }
 
 #name {
+  outline: none;
+  border: none;
+  resize: none;
   width: 200px;
   flex-grow: 1;
   font-family: Arial, Helvetica;
