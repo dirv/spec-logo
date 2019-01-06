@@ -137,14 +137,9 @@ describe('parseStatement', () => {
       expect(state.drawCommands).toEqual([]);
     });
 
-    it('returns the entire line of text if the statement was incomplete', () => {
+    it('returns the existing state if the statement was incomplete', () => {
       const state = parseStatement('forward 10 backward', initialState);
-      expect(state.currentEditLine).toEqual('forward 10 backward');
-    });
-
-    it('returns a blank edit line of text if the statement was completed', () => {
-      const state = parseStatement('forward 10 backward 10', initialState);
-      expect(state.currentEditLine).toEqual('');
+      expect(state).toEqual(initialState);
     });
   });
 

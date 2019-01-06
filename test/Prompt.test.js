@@ -11,9 +11,6 @@ describe('Prompt', () => {
 
   beforeEach(() => {
     store = configureStore([storeSpy]);
-    store.dispatch({ type: 'SUBMIT_EDIT_LINE',
-      text: 'repeat 4\n[ forward 10'
-    });
   });
 
   function mountWithStore(component) {
@@ -36,10 +33,10 @@ describe('Prompt', () => {
     return wrapper.find('tr').at(0).childAt(1).childAt(0);
   }
 
-  it('renders a table cell with the existing line text', () => {
+  it('renders a table cell with an empty textarea', () => {
     wrapper = mountWithStore(<Prompt />);
     expect(textArea().type()).toEqual('textarea');
-    expect(textArea().prop('value')).toEqual('repeat 4\n[ forward 10');
+    expect(textArea().prop('value')).toEqual('');
   });
 
   it('sets the textarea text to initially have a height of 20', () => {

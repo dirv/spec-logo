@@ -50,9 +50,9 @@ export function parseStatement(line, state) {
   try {
     const updatedState = tokenizeLine(line, lastLineNumber(state)).reduce(parseAndSaveStatement, state);
     if (!updatedState.currentInstruction) {
-      return { ...performAllFinished(updatedState), currentEditLine: '' };
+      return { ...performAllFinished(updatedState) };
     } else {
-      return { ...state, currentEditLine: line };
+      return state;
     }
   } catch(e) {
     return { ...state, error: { ...e, line } };

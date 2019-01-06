@@ -12,7 +12,6 @@ export const defaultState = {
   nextInstructionId: 0,
   nextDrawCommandId: 0,
   allFunctions: builtInFunctions,
-  currentEditLine: 'forward 10',
   name: 'Unnamed script',
 };
 

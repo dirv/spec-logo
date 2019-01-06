@@ -4,10 +4,10 @@ const { useEffect, useRef, useState, useCallback } = React;
 
 export const Prompt = () => {
   const mapState = useCallback(({
-    script: { currentEditLine, nextInstructionId },
-    environment: { promptFocusRequest } }) => ({ currentEditLine, nextInstructionId, promptFocusRequest }), []);
+    script: { nextInstructionId },
+    environment: { promptFocusRequest } }) => ({ nextInstructionId, promptFocusRequest }), []);
 
-  const { currentEditLine, nextInstructionId, promptFocusRequest } = useMappedState(mapState);
+  const { nextInstructionId, promptFocusRequest } = useMappedState(mapState);
 
   const dispatch = useDispatch();
   const submitEditLine = useCallback(text => {
@@ -32,7 +32,7 @@ export const Prompt = () => {
 
   const handleScroll = useCallback(e => setHeight(e.target.scrollHeight));
 
-  const [ editPrompt, setEditPrompt ] = useState(currentEditLine);
+  const [ editPrompt, setEditPrompt ] = useState('');
   const [ shouldSubmit, setShouldSubmit ] = useState(false);
 
   const [ currentInstructionId, setCurrentInstructionId ] = useState(nextInstructionId);
@@ -43,7 +43,7 @@ export const Prompt = () => {
 
   if (currentInstructionId != nextInstructionId) {
     setCurrentInstructionId(nextInstructionId);
-    setEditPrompt(currentEditLine);
+    setEditPrompt('');
     setHeight(20);
   }
 
