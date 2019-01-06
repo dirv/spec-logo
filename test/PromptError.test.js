@@ -36,7 +36,7 @@ describe('PromptError', () => {
   describe('with error present', () => {
     beforeEach(() => {
       store = configureStore([storeSpy], {
-        script: { error: { description: 'error message' } }
+        script: { present: { error: { description: 'error message' } } }
       });
     });
 

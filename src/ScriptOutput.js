@@ -3,7 +3,7 @@ import { useMappedState } from 'redux-react-hook';
 const { useCallback } = React;
 
 export const ScriptOutput = () => {
-  const mapState = useCallback(({ script: { drawCommands } }) => ({ drawCommands }), []);
+  const mapState = useCallback(({ script: { present: { drawCommands } } }) => ({ drawCommands }), []);
   const { drawCommands } = useMappedState(mapState);
 
   return (

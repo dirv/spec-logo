@@ -23,7 +23,7 @@ export const LineWithNumber = ({ number, tokens }) => {
 };
 
 export const StatementHistory = () => {
-  const mapState = useCallback(({script: { parsedTokens } }) => ({ parsedTokens }), []);
+  const mapState = useCallback(({script: { present: { parsedTokens } } }) => ({ parsedTokens }), []);
   const { parsedTokens } = useMappedState(mapState);
 
   const lines = groupByLineNumber(parsedTokens);

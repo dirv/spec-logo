@@ -5,7 +5,7 @@ const { useEffect, useRef, useState, useCallback } = React;
 const ifEnterKey = (e, func) => { if (e.key === 'Enter') { func(); } };
 
 export const ScriptName = () => {
-  const mapState = useCallback(({ script: { name } }) => ({ name }), []);
+  const mapState = useCallback(({ script: { present: { name } } }) => ({ name }), []);
 
   const { name } = useMappedState(mapState);
   const dispatch = useDispatch();

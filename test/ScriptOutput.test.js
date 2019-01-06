@@ -10,13 +10,13 @@ describe('ScriptOutput', () => {
   let wrapper;
 
   beforeEach(() => {
-    store = configureStore([storeSpy], { script: {
+    store = configureStore([storeSpy], { script: { present: {
       drawCommands: [
         { id: 123, x1: 234, y1: 345, x2: 456, y2: 567 },
         { id: 234, x1: 234, y1: 345, x2: 456, y2: 567 },
         { id: 567, x1: 234, y1: 345, x2: 456, y2: 567 }
       ]
-    }});
+    }}});
   });
 
   function mountWithStore(component) {

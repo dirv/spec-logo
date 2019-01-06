@@ -10,14 +10,14 @@ describe('StatementHistory', () => {
   let wrapper;
 
   beforeEach(() => {
-    store = configureStore([storeSpy], { script: {
+    store = configureStore([storeSpy], { script: { present: {
       parsedTokens: [
         { lineNumber: 1, text: 'abc' },
         { lineNumber: 1, text: 'def' },
         { lineNumber: 2, text: 'abc' },
         { lineNumber: 3, text: 'abc' }
       ]
-    }});
+    }}});
   });
 
   function mountWithStore(component) {
