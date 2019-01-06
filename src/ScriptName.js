@@ -1,6 +1,6 @@
 import React from 'react';
 import { useDispatch, useMappedState } from 'redux-react-hook';
-const { useEffect, useRef, useState, useCallback } = React;
+const { useState, useCallback } = React;
 
 const ifEnterKey = (e, func) => { if (e.key === 'Enter') { func(); } };
 
