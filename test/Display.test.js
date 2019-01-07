@@ -4,7 +4,7 @@ import { mount } from 'enzyme';
 import { StoreContext } from 'redux-react-hook';
 import { expectRedux, storeSpy } from 'expect-redux';
 import { configureStore } from '../src/store';
-import { Drawing, ScriptOutput } from '../src/ScriptOutput';
+import { Drawing, ReduxConnectedDisplay } from '../src/Display';
 
 let lineA = { id: 123, x1: 10, y1: 10, x2: 20, y2: 20 };
 let lineB = { id: 234, x1: 10, y1: 10, x2: 20, y2: 20 };
@@ -158,7 +158,7 @@ describe('Drawing', () => {
   });
 });
 
-describe('ScriptOutput', () => {
+describe('ReduxConnectedDisplay', () => {
   let store;
   let wrapper;
 
@@ -175,7 +175,7 @@ describe('ScriptOutput', () => {
   }
 
   it('renders a Drawing with drawCommands as props', () => {
-    wrapper = mountWithStore(<ScriptOutput />);
+    wrapper = mountWithStore(<ReduxConnectedDisplay />);
     expect(wrapper.find('Drawing').exists()).toBeTruthy();
     expect(wrapper.find('Drawing').prop('drawCommands')).toEqual([ lineA, lineB ]);
   });

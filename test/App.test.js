@@ -4,7 +4,7 @@ import { App } from '../src/App';
 import { MenuButtons } from '../src/MenuButtons';
 import { StatementHistory } from '../src/StatementHistory';
 import { ScriptName } from '../src/ScriptName';
-import { ScriptOutput } from '../src/ScriptOutput';
+import { ReduxConnectedDisplay } from '../src/Display';
 import { Prompt } from '../src/Prompt';
 import { PromptError } from '../src/PromptError';
 
@@ -23,8 +23,8 @@ describe('App', () => {
     expect(wrapper.find('#menu').childAt(1).type()).toEqual(MenuButtons);
   });
 
-  it('renders a ScriptOutput component in div#drawing', () => {
-    expect(wrapper.find('#drawing > ScriptOutput').exists()).toBeTruthy();
+  it('renders a ReduxConnectedDisplay component in div#drawing', () => {
+    expect(wrapper.find('#drawing > ReduxConnectedDisplay').exists()).toBeTruthy();
   });
 
   it('renders a table in div#commands', () => {

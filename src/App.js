@@ -1,7 +1,7 @@
 import React from 'react';
 import { MenuButtons } from './MenuButtons';
 import { ScriptName } from './ScriptName';
-import { ScriptOutput } from './ScriptOutput';
+import { ReduxConnectedDisplay } from './Display';
 import { StatementHistory } from './StatementHistory';
 import { Prompt } from './Prompt';
 import { PromptError } from './PromptError';
@@ -12,7 +12,7 @@ export const App = () => <div id="mainWindow">
       <MenuButtons />
     </div>
     <div id="drawing">
-      <ScriptOutput />
+      <ReduxConnectedDisplay />
     </div>
     <div id="commands">
       <table>

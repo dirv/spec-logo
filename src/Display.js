@@ -46,9 +46,9 @@ export const Drawing = ({ drawCommands }) => {
   );
 };
 
-export const ScriptOutput = () => {
+export const ReduxConnectedDisplay = () => {
   const mapState = useCallback(({ script: { present: { drawCommands } } }) => ({ drawCommands }), []);
   const { drawCommands } = useMappedState(mapState);
 
-  return <Drawing drawCommands={drawCommands} />
+  return <Drawing drawCommands={drawCommands} />;
 };
