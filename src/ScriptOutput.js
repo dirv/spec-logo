@@ -2,10 +2,8 @@ import React from 'react';
 import { useMappedState } from 'redux-react-hook';
 const { useCallback, useRef, useState } = React;
 
-export const ScriptOutput = () => {
+export const Drawing = ({ drawCommands }) => {
   const duration = 0.5;
-  const mapState = useCallback(({ script: { present: { drawCommands } } }) => ({ drawCommands }), []);
-  const { drawCommands } = useMappedState(mapState);
 
   const svgRef = useRef();
 
@@ -46,4 +44,11 @@ export const ScriptOutput = () => {
       </svg>
     </div>
   );
+};
+
+export const ScriptOutput = () => {
+  const mapState = useCallback(({ script: { present: { drawCommands } } }) => ({ drawCommands }), []);
+  const { drawCommands } = useMappedState(mapState);
+
+  return <Drawing drawCommands={drawCommands} />
 };
