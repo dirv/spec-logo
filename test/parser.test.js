@@ -47,9 +47,9 @@ describe('parseStatement', () => {
     expect(result.turtle.angle).toEqual(30);
   });
 
-  it('does not issue a draw command if the command is a rotation', () => {
+  it('issues a draw command if the command is a rotation', () => {
     const result = parseStatement('right 90', { ...initialState, turtle: { x: 0, y: 0, angle: 0 } });
-    expect(result.drawCommands).toEqual([]);
+    expect(result.drawCommands.length).toEqual(1);
   });
 
   it('rotates right', () => {
@@ -109,10 +109,10 @@ describe('parseStatement', () => {
     });
   });
 
-  it('maintains draw commands when rotating', () => {
+  it('appends draw command when rotating', () => {
     let state = parseStatement('forward 10', initialState);
     state = parseStatement('right 10', state);
-    expect(state.drawCommands.length).toEqual(1);
+    expect(state.drawCommands.length).toEqual(2);
   });
 
   it('maintains draw commands on error', () => {

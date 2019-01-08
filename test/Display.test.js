@@ -6,9 +6,9 @@ import { expectRedux, storeSpy } from 'expect-redux';
 import { configureStore } from '../src/store';
 import { Drawing, ReduxConnectedDisplay } from '../src/Display';
 
-let lineA = { id: 123, x1: 10, y1: 10, x2: 20, y2: 20 };
-let lineB = { id: 234, x1: 10, y1: 10, x2: 20, y2: 20 };
-let lineC = { id: 235, x1: 10, y1: 10, x2: 20, y2: 20 };
+let lineA = { drawCommand: 'drawLine', id: 123, x1: 10, y1: 10, x2: 20, y2: 20 };
+let lineB = { drawCommand: 'drawLine', id: 234, x1: 10, y1: 10, x2: 20, y2: 20 };
+let lineC = { drawCommand: 'drawLine', id: 235, x1: 10, y1: 10, x2: 20, y2: 20 };
 
 describe('Drawing', () => {
   let store;
@@ -41,6 +41,11 @@ describe('Drawing', () => {
     expect(svg().childAt(0).prop('y1')).toEqual(10);
   });
 
+  it('does not draw any commands for non-drawLine commands', () => {
+    wrapper = mount(<Drawing drawCommands={ [ { drawCommand: 'unknown' } ] }/>);
+    expect(svg().find('line').length).toEqual(0);
+  });
+
   it('initially sets end of line to beginning of line, ready for animation', () => {
     wrapper = mount(<Drawing drawCommands={ [ lineA ] }/>);
     expect(svg().childAt(0).prop('x2')).toEqual(10);
@@ -59,7 +64,7 @@ describe('Drawing', () => {
 
   it('draws every command', () => {
     wrapper = mount(<Drawing drawCommands={ [ lineA, lineB, lineC ] }/>);
-    expect(svg().children().length).toEqual(3);
+    expect(svg().find('line').length).toEqual(3);
   });
 
   describe('animating', () => {
@@ -121,9 +126,9 @@ describe('Drawing', () => {
 
     it('creates x2 and y2 animations for every line drawn', () => {
       wrapper = mount(<Drawing drawCommands={[
-        { id: 123, x1: 10, y1: 10, x2: 20, y2: 20 },
-        { id: 234, x1: 10, y1: 10, x2: 20, y2: 20 },
-        { id: 345, x1: 10, y1: 10, x2: 20, y2: 20 },
+        { drawCommand: 'drawLine', id: 123, x1: 10, y1: 10, x2: 20, y2: 20 },
+        { drawCommand: 'drawLine', id: 234, x1: 10, y1: 10, x2: 20, y2: 20 },
+        { drawCommand: 'drawLine', id: 345, x1: 10, y1: 10, x2: 20, y2: 20 },
       ]}/>);
       expect(wrapper.find('animate').length).toEqual(6);
     });

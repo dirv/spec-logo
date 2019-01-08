@@ -16,7 +16,9 @@ export const Drawing = ({ drawCommands }) => {
     currentTime = 0;
   }
 
-  const newAnimationTimes = drawCommands.reduce((times, command) => {
+  const lineCommands = drawCommands.filter(command => command.drawCommand === 'drawLine');
+
+  const newAnimationTimes = lineCommands.reduce((times, command) => {
     if (times.newAnimationTimes[command.id] === undefined) {
       return {
         newAnimationTimes: {
@@ -36,7 +38,7 @@ export const Drawing = ({ drawCommands }) => {
   return (
     <div id="viewport">
       <svg viewBox="-300 -300 600 600" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" ref={svgRef}>
-        {drawCommands.map(({ id, x1, y1, x2, y2 }) => {
+        {lineCommands.map(({ id, x1, y1, x2, y2 }) => {
           return <line key={id} x1={x1} y1={y1} x2={x1} y2={y1} strokeWidth="2" stroke="black">
             <animate attributeName="x2" begin={newAnimationTimes[id]} dur={duration} to={x2} fill="freeze" />
             <animate attributeName="y2" begin={newAnimationTimes[id]} dur={duration} to={y2} fill="freeze" />
