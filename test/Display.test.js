@@ -6,9 +6,9 @@ import { expectRedux, storeSpy } from 'expect-redux';
 import { configureStore } from '../src/store';
 import { StaticCommands, AnimatedCommands, Drawing, ReduxConnectedDisplay } from '../src/Display';
 
-let lineA = { drawCommand: 'drawLine', id: 123, x1: 10, y1: 10, x2: 20, y2: 20 };
-let lineB = { drawCommand: 'drawLine', id: 234, x1: 10, y1: 10, x2: 20, y2: 20 };
-let lineC = { drawCommand: 'drawLine', id: 235, x1: 10, y1: 10, x2: 20, y2: 20 };
+let lineA = { drawCommand: 'drawLine', id: 123, x1: 10, y1: 10, x2: 20, y2: 10 };
+let lineB = { drawCommand: 'drawLine', id: 234, x1: 20, y1: 10, x2: 20, y2: 20 };
+let lineC = { drawCommand: 'drawLine', id: 235, x1: 20, y1: 20, x2: 30, y2: 30 };
 
 describe('Drawing', () => {
   let store;
@@ -79,7 +79,7 @@ describe('Drawing', () => {
       expect(svg().find('line').prop('x1')).toEqual(10);
       expect(svg().find('line').prop('y1')).toEqual(10);
       expect(svg().find('line').prop('x2')).toEqual(20);
-      expect(svg().find('line').prop('y2')).toEqual(20);
+      expect(svg().find('line').prop('y2')).toEqual(10);
     });
 
     it('does not draw any commands for non-drawLine commands', () => {
@@ -124,10 +124,19 @@ describe('Drawing', () => {
         expect(firstLine.childAt(0).prop('begin')).toEqual(0);
       });
 
-      it('has a duration of 0.5s', () => {
-        wrapper = mount(<Drawing drawCommands={ [ lineA ] }/>);
-        const firstLine = svg().find('svg line');
-        expect(firstLine.childAt(0).prop('dur')).toEqual(0.5);
+      describe('duration', () => {
+        it('has a duration of 0.05s for a horizontal line of length 10', () => {
+          wrapper = mount(<Drawing drawCommands={ [ lineA ] }/>);
+          const firstLine = svg().find('svg line');
+          expect(firstLine.childAt(0).prop('dur')).toEqual(0.05);
+        });
+
+        it('has a duration based on the distance for any line', () => {
+          wrapper = mount(<Drawing drawCommands={ [ lineC ] }/>);
+          const distance = Math.sqrt(10 * 10 * 2);
+          const firstLine = svg().find('svg line');
+          expect(firstLine.childAt(0).prop('dur')).toEqual(distance * 0.005);
+        });
       });
 
       it('sets the fill to freeze', () => {
@@ -143,7 +152,7 @@ describe('Drawing', () => {
         const firstLine = svg().find('svg line').at(0);
         expect(firstLine.childAt(1).type()).toEqual('animate');
         expect(firstLine.childAt(1).prop('attributeName')).toEqual('y2');
-        expect(firstLine.childAt(1).prop('to')).toEqual(20);
+        expect(firstLine.childAt(1).prop('to')).toEqual(10);
       });
 
       it('sets the begin time to 0 when component first mounts', () => {
@@ -152,10 +161,10 @@ describe('Drawing', () => {
         expect(firstLine.childAt(1).prop('begin')).toEqual(0);
       });
 
-      it('has a duration of 0.5s', () => {
+      it('has a duration of 0.05s', () => {
         wrapper = mount(<Drawing drawCommands={ [ lineA ] }/>);
         const firstLine = svg().find('svg line');
-        expect(firstLine.childAt(1).prop('dur')).toEqual(0.5);
+        expect(firstLine.childAt(1).prop('dur')).toEqual(0.05);
       });
 
       it('sets the fill to freeze', () => {
@@ -198,7 +207,7 @@ describe('Drawing', () => {
       });
 
       it('sets the next draw command to that time plus the duration', () => {
-        expect(wrapper.find('line').at(1).childAt(0).prop('begin')).toEqual(5.5);
+        expect(wrapper.find('line').at(1).childAt(0).prop('begin')).toEqual(5.05);
       });
     });
   });
