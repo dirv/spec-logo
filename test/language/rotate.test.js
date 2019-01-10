@@ -25,6 +25,6 @@ describe('rotate', () => {
     expect(updated.drawCommands[1]).toBeDefined();
     expect(updated.drawCommands[1].drawCommand).toEqual('rotate');
     expect(updated.drawCommands[1].id).toEqual(1);
-    expect(updated.drawCommands[1].angleChange).toEqual(10);
+    expect(updated.drawCommands[1].angle).toEqual(20);
   });
 });

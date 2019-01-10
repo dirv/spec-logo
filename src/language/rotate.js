@@ -3,12 +3,13 @@ export const rotate = (state, angleValue) => {
   let { nextDrawCommandId } = state;
 
   const angleChange = angleValue.get(state);
+  const angle = angleChange + turtle.angle;
   return {
     drawCommands: [ ...drawCommands, {
       drawCommand: 'rotate',
       id: nextDrawCommandId++,
-      angleChange
+      angle
     }],
-    turtle: { ...turtle, angle: angleChange + turtle.angle }
+    turtle: { ...turtle, angle }
   };
 };
