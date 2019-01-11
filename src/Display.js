@@ -39,9 +39,8 @@ export const DrawingLine = ({ x1, y1, x2, y2, beginAt, duration }) => {
 const distance = ({ x1, y1, x2, y2 }) => Math.sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
 const movementSpeed = 5;
 
-export const Drawing = ({ drawCommands }) => {
-  const duration = 500;
 
+export const Drawing = ({ drawCommands }) => {
   const [ delays, setDelays ] = useState({});
 
   let delay = 0;
