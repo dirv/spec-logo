@@ -40,24 +40,23 @@ const distance = ({ x1, y1, x2, y2 }) => Math.sqrt((x2 - x1) * (x2 - x1) + (y2 -
 const movementSpeed = 5;
 
 export const AnimatedCommands = ({ drawCommands }) => {
-  let delay = 0;
   const lineCommands = drawCommands.filter(command => command.drawCommand === 'drawLine');
-  const newDelays = lineCommands.reduce((delays, command) => {
+  const commandsWithTimings = lineCommands.reduce(({ beginAt, commandsWithTimings }, command) => {
     const duration = distance(command) * movementSpeed;
-    const thisDelay = delay;
-    delay += duration;
     return {
-      ...delays,
-      [command.id]: {
-        beginAt: thisDelay,
-        duration
-      }
+      beginAt: beginAt + duration,
+      commandsWithTimings: [
+        ...commandsWithTimings,
+        {
+          ...command,
+          beginAt,
+          duration
+        }
+      ]
     };
-  }, {});
+  }, { beginAt: 0, commandsWithTimings: [] }).commandsWithTimings;
 
-  return lineCommands.map(({ id, x1, y1, x2, y2 }) => {
-    return <AnimatedLine key={id} x1={x1} y1={y1} x2={x2} y2={y2} {...newDelays[id]} />
-  });
+  return commandsWithTimings.map(command => <AnimatedLine key={command.id} {...command} />);
 };
 
 export const StaticCommands = ({ drawCommands }) => {
