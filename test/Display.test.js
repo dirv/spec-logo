@@ -6,9 +6,9 @@ import { expectRedux, storeSpy } from 'expect-redux';
 import { configureStore } from '../src/store';
 import { DrawingLine, Drawing, ReduxConnectedDisplay } from '../src/Display';
 
-let lineA = { id: 123, x1: 100, y1: 100, x2: 200, y2: 100 };
-let lineB = { id: 234, x1: 200, y1: 100, x2: 200, y2: 200 };
-let lineC = { id: 235, x1: 200, y1: 200, x2: 300, y2: 300 };
+let lineA = { drawCommand: 'drawLine', id: 123, x1: 100, y1: 100, x2: 200, y2: 100 };
+let lineB = { drawCommand: 'drawLine', id: 234, x1: 200, y1: 100, x2: 200, y2: 200 };
+let lineC = { drawCommand: 'drawLine', id: 235, x1: 200, y1: 200, x2: 300, y2: 300 };
 
 describe('DrawingLine', () => {
   let wrapper;
@@ -129,11 +129,21 @@ describe('Drawing', () => {
     expect(svg().prop('preserveAspectRatio')).toEqual('xMidYMid slice');
   });
 
-  it('renders a DrawingLine with the line coordinates', () => {
+  it.only('renders a line with the line coordinates', () => {
     wrapper = mount(<Drawing drawCommands={[ lineA ]} />);
-    expect(wrapper.find('DrawingLine').exists()).toBeTruthy();
+    expect(svg().find('DrawingLine').exists()).toBeTruthy();
     expect(wrapper.find('DrawingLine').containsMatchingElement(
       <DrawingLine x1={100} y1={100} x2={200} y2={100} />)).toBeTruthy();
+  });
+
+  it('draws every command', () => {
+    wrapper = mount(<Drawing drawCommands={ [ lineA, lineB, lineC ] }/>);
+    expect(svg().find('line').length).toEqual(3);
+  });
+
+  it('does not draw any commands for non-drawLine commands', () => {
+    wrapper = mount(<Drawing drawCommands={ [ { drawCommand: 'unknown' } ] }/>);
+    expect(svg().find('line').length).toEqual(0);
   });
 
   describe('duration', () => {

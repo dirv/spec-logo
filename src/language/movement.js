@@ -1,13 +1,7 @@
 import { negate, integerParameterValue } from './values';
 import { parseCall } from './parseCall';
 import { moveDistance } from './moveDistance';
-
-const rotate = (state, angleValue) => {
-  const { turtle } = state;
-  return {
-    turtle: { ...turtle, angle: angleValue.get(state) + turtle.angle }
-  };
-};
+import { rotate } from './rotate';
 
 export const forward = {
   names: [ 'forward', 'fd' ],

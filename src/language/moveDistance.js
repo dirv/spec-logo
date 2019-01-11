@@ -1,7 +1,8 @@
 const radians = angle => Math.PI * angle / 180;
 
 export function moveDistance(state, distanceValue) {
-  let { drawCommands, turtle, nextDrawCommandId } = state;
+  const { turtle } = state;
+  let { drawCommands, nextDrawCommandId } = state;
   const angle = turtle.angle;
   const radius = distanceValue.get(state);
   const newX = turtle.x + Math.cos(radians(angle)) * radius;

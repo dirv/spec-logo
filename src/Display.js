@@ -44,7 +44,8 @@ export const Drawing = ({ drawCommands }) => {
   const [ delays, setDelays ] = useState({});
 
   let delay = 0;
-  const newDelays = drawCommands.reduce((delays, command) => {
+  const lineCommands = drawCommands.filter(command => command.drawCommand === 'drawLine');
+  const newDelays = lineCommands.reduce((delays, command) => {
     if (delays[command.id] !== undefined) {
       return delays;
     } else {
@@ -68,7 +69,7 @@ export const Drawing = ({ drawCommands }) => {
   return (
     <div id="viewport">
       <svg viewBox="-300 -300 600 600" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
-        {drawCommands.map(({ id, x1, y1, x2, y2 }) => {
+        {lineCommands.map(({ id, x1, y1, x2, y2 }) => {
           return <DrawingLine key={id} x1={x1} y1={y1} x2={x2} y2={y2} {...newDelays[id]} />
         })}
       </svg>
