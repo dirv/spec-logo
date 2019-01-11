@@ -2,8 +2,7 @@ import React from 'react';
 import { useMappedState } from 'redux-react-hook';
 const { useCallback, useState, useEffect } = React;
 
-export const DrawingLine = ({ x1, y1, x2, y2, delay, duration }) => {
-  const [ endTime, setEndTime ] = useState();
+export const DrawingLine = ({ x1, y1, x2, y2, beginAt, duration }) => {
   const [ currentX2, setCurrentX2 ] = useState(x1);
   const [ currentY2, setCurrentY2 ] = useState(y1);
 
@@ -26,7 +25,7 @@ export const DrawingLine = ({ x1, y1, x2, y2, delay, duration }) => {
     };
     setTimeout(() => {
       animationFrameId = requestAnimationFrame(handleFrame)
-    }, delay);
+    }, beginAt);
 
     return () => {
       clearTimeout(timeoutId);
@@ -36,6 +35,9 @@ export const DrawingLine = ({ x1, y1, x2, y2, delay, duration }) => {
 
   return <line x1={x1} y1={y1} x2={currentX2} y2={currentY2} strokeWidth="2" stroke="black" />;
 };
+
+const distance = ({ x1, y1, x2, y2 }) => Math.sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
+const movementSpeed = 5;
 
 export const Drawing = ({ drawCommands }) => {
   const duration = 500;
@@ -47,9 +49,16 @@ export const Drawing = ({ drawCommands }) => {
     if (delays[command.id] !== undefined) {
       return delays;
     } else {
+      const duration = distance(command) * movementSpeed;
       const thisDelay = delay;
       delay += duration;
-      return { ...delays, [command.id]: thisDelay };
+      return {
+        ...delays,
+        [command.id]: {
+          beginAt: thisDelay,
+          duration
+        }
+      };
     }
   }, delays);
 
@@ -61,7 +70,7 @@ export const Drawing = ({ drawCommands }) => {
     <div id="viewport">
       <svg viewBox="-300 -300 600 600" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
         {drawCommands.map(({ id, x1, y1, x2, y2 }) => {
-          return <DrawingLine key={id} x1={x1} y1={y1} x2={x2} y2={y2} duration={duration} delay={delays[id]} />
+          return <DrawingLine key={id} x1={x1} y1={y1} x2={x2} y2={y2} {...newDelays[id]} />
         })}
       </svg>
     </div>

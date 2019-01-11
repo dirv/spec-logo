@@ -6,9 +6,9 @@ import { expectRedux, storeSpy } from 'expect-redux';
 import { configureStore } from '../src/store';
 import { DrawingLine, Drawing, ReduxConnectedDisplay } from '../src/Display';
 
-let lineA = { id: 123, x1: 10, y1: 10, x2: 20, y2: 20 };
-let lineB = { id: 234, x1: 10, y1: 10, x2: 20, y2: 20 };
-let lineC = { id: 235, x1: 10, y1: 10, x2: 20, y2: 20 };
+let lineA = { id: 123, x1: 100, y1: 100, x2: 200, y2: 100 };
+let lineB = { id: 234, x1: 200, y1: 100, x2: 200, y2: 200 };
+let lineC = { id: 235, x1: 200, y1: 200, x2: 300, y2: 300 };
 
 describe('DrawingLine', () => {
   let wrapper;
@@ -40,14 +40,14 @@ describe('DrawingLine', () => {
     mountDrawingLine({ delay: 0 });
     expect(line().exists()).toBeTruthy();
     expect(line().type()).toEqual('line');
-    expect(line().prop('x1')).toEqual(10);
-    expect(line().prop('y1')).toEqual(10);
+    expect(line().prop('x1')).toEqual(100);
+    expect(line().prop('y1')).toEqual(100);
   });
 
   it('initially sets end of line to beginning of line, ready for animation', () => {
     mountDrawingLine({ delay: 0 });
-    expect(line().prop('x2')).toEqual(10);
-    expect(line().prop('y2')).toEqual(10);
+    expect(line().prop('x2')).toEqual(100);
+    expect(line().prop('y2')).toEqual(100);
   });
 
   it('sets a stroke width of 2 on each line', () => {
@@ -75,32 +75,32 @@ describe('DrawingLine', () => {
     });
 
     it('triggers a setTimeout to run after the delay', async () => {
-      mountDrawingLine({ delay: 1 });
+      mountDrawingLine({ beginAt: 1 });
       await new Promise(setTimeoutOriginal);
       expect(setTimeoutSpy).toHaveBeenLastCalledWith(expect.anything(), 1);
     });
   });
 
   it('invokes requestAnimationFrame when the timeout fires', async () => {
-    mountDrawingLine({ delay: 0 });
+    mountDrawingLine({ beginAt: 0 });
     await new Promise(setTimeout);
     await new Promise(setTimeout);
     expect(requestAnimationFrameSpy).toHaveBeenCalled();
   });
 
   it('renders proportionate x2 and y2 values after invoking the requestAnimationFrame handler with a duration', async () => {
-    mountDrawingLine({ delay: 0, duration: 500 });
+    mountDrawingLine({ beginAt: 0, duration: 500 });
     await new Promise(setTimeout);
     await new Promise(setTimeout);
     triggerRequestAnimationFrame(0);
     triggerRequestAnimationFrame(250);
     wrapper = wrapper.update();
-    expect(line().prop('x2')).toEqual(15);
-    expect(line().prop('y2')).toEqual(15);
+    expect(line().prop('x2')).toEqual(150);
+    expect(line().prop('y2')).toEqual(100);
   });
 
   it('invokes requestAnimationFrame again when time is not up', async () => {
-    mountDrawingLine({ delay: 0, duration: 500 });
+    mountDrawingLine({ beginAt: 0, duration: 500 });
     await new Promise(setTimeout);
     await new Promise(setTimeout);
     triggerRequestAnimationFrame(0);
@@ -129,24 +129,37 @@ describe('Drawing', () => {
     expect(svg().prop('preserveAspectRatio')).toEqual('xMidYMid slice');
   });
 
-  it('renders a DrawingLine with a 500ms duration', () => {
+  it('renders a DrawingLine with the line coordinates', () => {
     wrapper = mount(<Drawing drawCommands={[ lineA ]} />);
     expect(wrapper.find('DrawingLine').exists()).toBeTruthy();
     expect(wrapper.find('DrawingLine').containsMatchingElement(
-      <DrawingLine key={123} x1={10} y1={10} x2={20} y2={20} duration={500} delay={0} />
-    )).toBeTruthy();
+      <DrawingLine x1={100} y1={100} x2={200} y2={100} />)).toBeTruthy();
   });
 
-  it('sets an incrementing on each draw command', () => {
+  describe('duration', () => {
+    it('renders a DrawingLine with a duration of 500ms for a horizontal line of length 100', () => {
+      wrapper = mount(<Drawing drawCommands={[ lineA ]} />);
+      expect(wrapper.find('DrawingLine').exists()).toBeTruthy();
+      expect(wrapper.find('DrawingLine').prop('duration')).toEqual(500);
+    });
+
+    it('has a duration based on a speed of 5 units per ms', () => {
+      wrapper = mount(<Drawing drawCommands={[ lineC ]} />);
+      const distance = Math.sqrt(100 * 100 * 2);
+      expect(wrapper.find('DrawingLine').prop('duration')).toEqual(distance * 5);
+    });
+  });
+
+  it('sets an incrementing delay on each draw command', () => {
     wrapper = mount(<Drawing drawCommands={ [ lineA, lineB ] }/>);
-    const delays = wrapper.find('DrawingLine').map(line => line.prop('delay'));
+    const delays = wrapper.find('DrawingLine').map(line => line.prop('beginAt'));
     expect(delays).toEqual([0, 500]);
   });
 
   it('does not adjust increments on existing lines when re-rendering', () => {
     wrapper = mount(<Drawing drawCommands={ [ lineA, lineB ] }/>);
     wrapper.setProps({ drawCommands: [ lineA, lineB, lineC ] });
-    const delays = wrapper.find('DrawingLine').map(line => line.prop('delay'));
+    const delays = wrapper.find('DrawingLine').map(line => line.prop('beginAt'));
     expect(delays).toEqual([0, 500, 0]);
   });
 });
