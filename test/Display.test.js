@@ -4,7 +4,7 @@ import { mount, shallow } from 'enzyme';
 import { StoreContext } from 'redux-react-hook';
 import { expectRedux, storeSpy } from 'expect-redux';
 import { configureStore } from '../src/store';
-import { AnimatedLine, StaticLines, Drawing, ReduxConnectedDisplay } from '../src/Display';
+import { Turtle, AnimatedLine, StaticLines, Drawing, ReduxConnectedDisplay } from '../src/Display';
 
 const lineA = { drawCommand: 'drawLine', id: 123, x1: 100, y1: 100, x2: 200, y2: 100 };
 const lineB = { drawCommand: 'drawLine', id: 234, x1: 200, y1: 100, x2: 200, y2: 200 };
@@ -14,6 +14,35 @@ const turtle = { x: 0, y: 0, angle: 0 };
 function mountSvg(component) {
   return mount(<svg>{component}</svg>);
 }
+
+describe('Turtle', () => {
+  let wrapper;
+
+  function polygon() {
+    return wrapper.find('polygon');
+  }
+
+  it('draws a polygon at the x,y co-ordinate', () => {
+    wrapper = mountSvg(<Turtle x={10} y={10} />)
+    expect(polygon().exists()).toBeTruthy();
+    expect(polygon().prop('points')).toEqual('5,15, 10,3, 15,15');
+  });
+
+  it('sets a stroke width of 2', () => {
+    wrapper = mountSvg(<Turtle x={10} y={10} />)
+    expect(polygon().prop('strokeWidth')).toEqual('2');
+  });
+
+  it('sets a stroke color of black', () => {
+    wrapper = mountSvg(<Turtle x={10} y={10} />)
+    expect(polygon().prop('stroke')).toEqual('black');
+  });
+
+  it('sets a fill of green', () => {
+    wrapper = mountSvg(<Turtle x={10} y={10} />)
+    expect(polygon().prop('fill')).toEqual('green');
+  });
+});
 
 describe('AnimatedLine', () => {
   let wrapper;
@@ -35,12 +64,12 @@ describe('AnimatedLine', () => {
     expect(line().prop('y2')).toEqual(20);
   });
 
-  it('sets a stroke width of 2 on each line', () => {
+  it('sets a stroke width of 2', () => {
     wrapper = mountSvg(<AnimatedLine commandToAnimate={lineA} turtle={turtle} />)
     expect(line().prop('strokeWidth')).toEqual('2');
   });
 
-  it('sets a stroke color of black on each line', () => {
+  it('sets a stroke color of black', () => {
     wrapper = mountSvg(<AnimatedLine commandToAnimate={lineA} turtle={turtle} />)
     expect(line().prop('stroke')).toEqual('black');
   });
@@ -60,12 +89,12 @@ describe('StaticLines', () => {
       <line x1={100} y1={100} x2={200} y2={100} />)).toBeTruthy();
   });
 
-  it('sets a stroke width of 2 on each line', () => {
+  it('sets a stroke width of 2', () => {
     wrapper = mountSvg(<StaticLines drawCommands={ [ lineA ] }/>);
     expect(line().prop('strokeWidth')).toEqual('2');
   });
 
-  it('sets a stroke color of black on each line', () => {
+  it('sets a stroke color of black', () => {
     wrapper = mountSvg(<StaticLines drawCommands={ [ lineA ] }/>);
     expect(line().prop('stroke')).toEqual('black');
   });
@@ -184,6 +213,16 @@ describe('Drawing', () => {
     wrapper = mount(<Drawing drawCommands={[ ]} />);
     await new Promise(setTimeout);
     expect(requestAnimationFrameSpy).not.toHaveBeenCalled();
+  });
+
+  it('renders a Turtle at the same position as the current line being drawn', async () => {
+    wrapper = mount(<Drawing drawCommands={[ lineA ]} />);
+    await new Promise(setTimeout);
+    triggerRequestAnimationFrame(0);
+    triggerRequestAnimationFrame(250);
+    wrapper = wrapper.update();
+    expect(wrapper.find('Turtle').prop('x')).toEqual(150);
+    expect(wrapper.find('Turtle').prop('y')).toEqual(100);
   });
 });
 

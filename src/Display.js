@@ -2,6 +2,16 @@ import React from 'react';
 import { useMappedState } from 'redux-react-hook';
 const { useCallback, useState, useEffect } = React;
 
+export const Turtle = ({ x, y }) => {
+  const buildPoints = (x, y) => `${x - 5},${y + 5}, ${x},${y - 7}, ${x + 5},${y + 5}`;
+
+  return <polygon
+    points={buildPoints(x, y)}
+    fill="green"
+    strokeWidth="2"
+    stroke="black" />;
+};
+
 export const AnimatedLine = ({ commandToAnimate: { drawCommand, x1, y1 }, turtle: { x, y } }) => {
   return <line x1={x1} y1={y1} x2={x} y2={y} strokeWidth="2" stroke="black" />;
 };
@@ -65,6 +75,7 @@ export const Drawing = ({ drawCommands }) => {
       <svg viewBox="-300 -300 600 600" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
         <StaticLines drawCommands={animatedLineCommands} />
         { isDrawingLine ? <AnimatedLine commandToAnimate={commandToAnimate} turtle={turtle} /> : null }
+        <Turtle {...turtle} />
       </svg>
     </div>
   );
