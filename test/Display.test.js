@@ -278,6 +278,17 @@ describe('Drawing', () => {
     expect(wrapper.find('Turtle').prop('x')).toEqual(0);
     expect(wrapper.find('Turtle').prop('y')).toEqual(0);
   });
+
+  describe('resetting', () => {
+    it('resets Turtle position and angle to all-zeros', () => {
+      wrapper = mount(<Drawing drawCommands={[ lineA, rotate90 ]} />);
+      wrapper.setProps({ drawCommands: [] });
+      wrapper = wrapper.update();
+      expect(wrapper.find('Turtle').prop('x')).toEqual(0);
+      expect(wrapper.find('Turtle').prop('y')).toEqual(0);
+      expect(wrapper.find('Turtle').prop('angle')).toEqual(0);
+    });
+  });
 });
 
 describe('ReduxConnectedDisplay', () => {

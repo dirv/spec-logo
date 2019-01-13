@@ -33,4 +33,11 @@ describe('logoReducer', () => {
       });
     });
   });
+
+  describe('RESET action', () => {
+    it('resets state to default state', () => {
+      const state = { a: 123 };
+      expect(reducer(state, { type: 'RESET' })).toEqual(defaultState);
+    });
+  });
 });

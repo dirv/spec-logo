@@ -21,6 +21,8 @@ export const logoReducer = (state = defaultState, action) => {
       return { ... state, name: action.text };
     case 'SUBMIT_EDIT_LINE':
       return parseStatement(action.text, { ...state, error: undefined });
+    case 'RESET':
+      return defaultState;
     default:
       return state;
   }

@@ -37,6 +37,9 @@ export const Drawing = ({ drawCommands }) => {
   const [ turtle, setTurtle ] = useState({ x: 0, y: 0, angle: 0 });
 
   if (previousDrawCommands != drawCommands) {
+    if (drawCommands.length === 0) {
+      setTurtle({ x: 0, y: 0, angle: 0});
+    }
     setNextCommandToAnimate(previousDrawCommands.length);
     setPreviousDrawCommands(drawCommands);
   }

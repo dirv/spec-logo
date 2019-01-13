@@ -67,7 +67,7 @@ describe('MenuButtons', () => {
       expect(button('Redo').prop('disabled')).toBeFalsy();
     });
 
-    it('dispatches an action of REDO when clicking the button', () => {
+    it('dispatches an action of REDO when clicked', () => {
       store.dispatch({ type: 'SUBMIT_EDIT_LINE', text: 'forward 10\n' });
       wrapper = mountWithStore(<MenuButtons />);
       button('Undo').simulate('click');
@@ -75,6 +75,33 @@ describe('MenuButtons', () => {
       expectRedux(store)
         .toDispatchAnAction()
         .matching({ type: 'REDO' });
+    });
+  });
+
+  describe('reset button', () => {
+    it('renders', () => {
+      wrapper = mountWithStore(<MenuButtons />);
+      expect(button('Reset').exists()).toBeTruthy();
+    });
+
+    it('is disabled initially', () => {
+      wrapper = mountWithStore(<MenuButtons />);
+      expect(button('Reset').prop('disabled')).toBeTruthy();
+    });
+
+    it('is enabled once a state change occurs', () => {
+      store.dispatch({ type: 'SUBMIT_EDIT_LINE', text: 'forward 10\n' });
+      wrapper = mountWithStore(<MenuButtons />);
+      expect(button('Reset').prop('disabled')).toBeFalsy();
+    });
+
+    it('dispatches an action of RESET when clicked', () => {
+      store.dispatch({ type: 'SUBMIT_EDIT_LINE', text: 'forward 10\n' });
+      wrapper = mountWithStore(<MenuButtons />);
+      button('Reset').simulate('click');
+      expectRedux(store)
+        .toDispatchAnAction()
+        .matching({ type: 'RESET' });
     });
   });
 });
