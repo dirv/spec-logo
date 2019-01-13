@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import { StoreContext } from 'redux-react-hook';
-import { configureStore } from './store';
+import { configureStoreWithLocalStorage } from './store';
 import { App } from './App';
 
-ReactDOM.render(<StoreContext.Provider value={configureStore()}><App /></StoreContext.Provider>, document.getElementById('root'));
+ReactDOM.render(<StoreContext.Provider value={configureStoreWithLocalStorage()}><App /></StoreContext.Provider>, document.getElementById('root'));

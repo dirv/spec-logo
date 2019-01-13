@@ -1,7 +1,8 @@
-import { createStore, compose, combineReducers } from 'redux';
+import { createStore, compose, combineReducers, applyMiddleware } from 'redux';
 import { logoReducer } from './reducers/logo';
 import { withUndoRedo } from './reducers/withUndoRedo';
 import { environmentReducer } from './reducers/environment';
+import { save, load } from './middleware/localStorage';
 
 export const configureStore = (storeEnhancers = [], initialState = {}) => {
   return createStore(
@@ -10,6 +11,8 @@ export const configureStore = (storeEnhancers = [], initialState = {}) => {
       environment: environmentReducer
     }),
     initialState,
-    compose(...storeEnhancers)
+    compose(...[applyMiddleware(save), ...storeEnhancers])
   );
 };
+
+export const configureStoreWithLocalStorage = () => configureStore(undefined, load());
