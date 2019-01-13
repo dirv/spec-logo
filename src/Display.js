@@ -2,14 +2,17 @@ import React from 'react';
 import { useMappedState } from 'redux-react-hook';
 const { useCallback, useState, useEffect } = React;
 
-export const Turtle = ({ x, y }) => {
+export const Turtle = ({ x, y, angle }) => {
   const buildPoints = (x, y) => `${x - 5},${y + 5}, ${x},${y - 7}, ${x + 5},${y + 5}`;
+
+  const buildRotation = (angle, x, y) => `${angle + 90}, ${x}, ${y}`;
 
   return <polygon
     points={buildPoints(x, y)}
     fill="green"
     strokeWidth="2"
-    stroke="black" />;
+    stroke="black"
+    transform={`rotate(${buildRotation(angle, x, y)})`} />;
 };
 
 export const AnimatedLine = ({ commandToAnimate: { drawCommand, x1, y1 }, turtle: { x, y } }) => {
@@ -22,14 +25,16 @@ export const StaticLines = ({ drawCommands }) => {
 };
 
 const isDrawLineCommand = command => command.drawCommand === 'drawLine';
+const isRotateCommand = command => command.drawCommand === 'rotate';
 const distance = ({ x1, y1, x2, y2 }) => Math.sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
 const movementSpeed = 5;
+const rotateSpeed = 2 / 360 * 1000;
 
 export const Drawing = ({ drawCommands }) => {
 
   const [ previousDrawCommands, setPreviousDrawCommands ] = useState([]);
   const [ nextCommandToAnimate, setNextCommandToAnimate ] = useState(0);
-  const [ turtle, setTurtle ] = useState({ x: 0, y: 0 });
+  const [ turtle, setTurtle ] = useState({ x: 0, y: 0, angle: 0 });
 
   if (previousDrawCommands != drawCommands) {
     setNextCommandToAnimate(previousDrawCommands.length);
@@ -38,33 +43,59 @@ export const Drawing = ({ drawCommands }) => {
 
   const commandToAnimate = drawCommands[nextCommandToAnimate];
   const isDrawingLine = commandToAnimate && isDrawLineCommand(commandToAnimate);
+  const isRotating = commandToAnimate && isRotateCommand(commandToAnimate);
 
   useEffect(() => {
     let start;
     let duration;
     let animationFrameId;
+    let originalAngle;
 
-    const handleFrame = (time) => {
+    const handleDrawLineFrame = (time) => {
       if (start === undefined) start = time;
       if (time < start + duration) {
         const elapsed = time - start;
         setTurtle({
+          ...turtle,
           x: commandToAnimate.x1 + ((commandToAnimate.x2 - commandToAnimate.x1) * (elapsed / duration)),
-          y: commandToAnimate.y1 + ((commandToAnimate.y2 - commandToAnimate.y1) * (elapsed / duration))
+          y: commandToAnimate.y1 + ((commandToAnimate.y2 - commandToAnimate.y1) * (elapsed / duration)),
         });
-        requestAnimationFrame(handleFrame);
+        requestAnimationFrame(handleDrawLineFrame);
       } else {
+        setNextCommandToAnimate(nextCommandToAnimate + 1);
+      }
+    };
+
+    const handleRotationFrame = (time) => {
+      if (start === undefined) start = time;
+      if (time < start + duration) {
+        const elapsed = time - start;
+        setTurtle({
+          ...turtle,
+          angle: originalAngle + (commandToAnimate.angle - originalAngle) * (elapsed / duration)
+        });
+        requestAnimationFrame(handleRotationFrame);
+      } else {
+        setTurtle({
+          ...turtle,
+          angle: commandToAnimate.angle
+        });
         setNextCommandToAnimate(nextCommandToAnimate + 1);
       }
     };
 
     if (isDrawingLine) {
       duration = movementSpeed * distance(commandToAnimate);
-      animationFrameId = requestAnimationFrame(handleFrame);
+      animationFrameId = requestAnimationFrame(handleDrawLineFrame);
 
       return () => {
         cancelAnimationFrame(animationFrameId);
       };
+    }
+    if (isRotating) {
+      duration = rotateSpeed * Math.abs(commandToAnimate.angle - turtle.angle);
+      originalAngle = turtle.angle;
+      animationFrameId = requestAnimationFrame(handleRotationFrame);
     }
   }, [nextCommandToAnimate, drawCommands]);
 
